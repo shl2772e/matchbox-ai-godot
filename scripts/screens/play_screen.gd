@@ -54,7 +54,7 @@ func build() -> void:
 	_view = BoardView.new()
 	_view.cell_tapped.connect(_kid_tap)
 	add_child(_view)
-	_message = Kit.label("AI가 성냥갑을 열어요.", Kit.F_BODY, Kit.R * 1.25, Kit.INK, HORIZONTAL_ALIGNMENT_CENTER, true)
+	_message = Kit.label("AI 차례예요. 성냥갑을 열어요.", Kit.F_BODY, Kit.R * 1.25, Kit.INK, HORIZONTAL_ALIGNMENT_CENTER, true)
 	add_child(_message)
 	_box = MatchboxView.new()
 	_box.percent = percent
@@ -185,7 +185,7 @@ func _place_ai(b: Array, cell: int, move: Dictionary) -> void:
 	else:
 		phase = "kid"
 		_view.locked = false
-		_say("네 차례예요. 빈칸을 눌러 ×를 둬요.")
+		_say("내 차례예요. 빈칸을 눌러 ×를 둬요.")
 
 
 func _kid_tap(cell: int) -> void:
@@ -212,7 +212,7 @@ func _finish(b: Array, o: String, resigned := false) -> void:
 	_view.show_line(Ttt.win_line(b))
 	Sfx.done()
 	if not resigned:
-		_say({"kid": "네가 이겼어요.", "ai": "AI가 이겼어요.", "draw": "비겼어요."}[o])
+		_say({"kid": "내가 이겼어요.", "ai": "AI가 이겼어요.", "draw": "비겼어요."}[o])
 	later(END_S, round_end.emit.bind({"outcome": o, "moves": _moves, "resigned": resigned}))
 
 

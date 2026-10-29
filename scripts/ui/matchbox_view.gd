@@ -10,7 +10,7 @@ var beads: Array = []
 var box_no := 0
 var title := "지금 판 모양의 성냥갑"
 var percent := false
-var wait_text := "네 차례예요. 빈칸을 눌러 ×를 둬요."
+var wait_text := "내 차례예요. 빈칸을 눌러 ×를 둬요."
 var picked := -1
 ## 고른 구슬이 서랍을 떠났는지 (날아가는 구슬은 놀이 화면이 그린다)
 var bead_out := false

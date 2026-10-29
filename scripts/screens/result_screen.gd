@@ -39,13 +39,13 @@ func build() -> void:
 		add_child(l)
 	var principle := "비긴 수에도 구슬이 하나씩 늘어요. AI는 지지 않는 법부터 배워요."
 	if score.kid > 0:
-		principle = "네가 이긴 판에서 AI는 그 수의 구슬을 잃었어요. 다음 친구에게는 그 수를 덜 둘 거예요."
+		principle = "내가 이긴 판에서 AI는 그 수의 구슬을 잃었어요. 다음 친구에게는 그 수를 덜 둘 거예요."
 	elif score.ai > 0:
 		principle = "AI가 이긴 수에는 구슬이 3개씩 늘었어요. 그 수는 점점 더 자주 나와요."
 	_up = Kit.label("늘어난 구슬 0개", Kit.F_LABEL, R * 1.6, Kit.TEAL)
 	_down = Kit.label("빠진 구슬 0개", Kit.F_LABEL, R * 1.6, Kit.RED_INK)
 	var specs := [
-		[Kit.CREAM, "너와 둔 판으로 바뀐 구슬", Kit.NAVY, Kit.INK, [principle]],
+		[Kit.CREAM, "나와 둔 판으로 바뀐 구슬", Kit.NAVY, Kit.INK, [principle]],
 		[Kit.NAVY, "이게 강화학습이에요", Kit.MUSTARD, Kit.CREAM, ["AI는 정답을 미리 아는 게 아니라, 해 보고 결과로 배워요. 잘된 선택은 더 자주, 안된 선택은 덜 하도록 스스로 고쳐요.", "오늘 %d번째 판까지 여러분이 함께 AI를 가르쳤어요." % today_games]],
 	]
 	for i in specs.size():
