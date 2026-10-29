@@ -10,15 +10,15 @@ signal done
 const PAGES := [
 	{
 		"kind": "news",
-		"title": "컴퓨터 없이, 성냥갑이 틱택토를 배우다",
-		"text": "컴퓨터가 방 하나만 하고 아주 귀하던 1961년. 영국의 과학자 도널드 미치는 성냥갑 304개와 색 구슬로 틱택토를 두는 기계를 만들었어요. 이름은 메나스(MENACE).\n\n이 기계는 규칙도, 이기는 법도 몰랐어요. 그냥 상자를 열어 구슬 하나를 꺼낼 뿐이었죠. 그런데 수백 판을 두자 기계는 점점 지지 않게 되었어요. 컴퓨터 없이도 기계가 배울 수 있다는 걸 보여 준 실험이에요.",
-		"caption": "성냥갑 304개로 만든 메나스. 2018년 수학자 매튜 스크록스가 똑같이 다시 만든 것이에요.  사진 Matthew Scroggs · CC BY-SA 4.0",
+		"title": "1961년, 컴퓨터 없이 배우는 기계",
+		"text": "영국의 과학자 도널드 미치는 성냥갑 304개와 색 구슬로 틱택토를 두는 기계를 만들었어요. 이기는 법은 아무도 알려 주지 않았는데, 수백 판을 두자 점점 지지 않게 되었어요.",
+		"caption": "성냥갑 304개로 만든 메나스(MENACE). 2018년에 똑같이 다시 만든 것.  사진 Matthew Scroggs · CC BY-SA 4.0",
 	},
 	{
 		"kind": "album",
 		"title": "박사와 기계의 기록",
-		"text": "도널드 미치 박사(1923~2007). 전쟁 때는 암호 해독팀에서 앨런 튜링과 함께 일했어요. 사진은 1986년, 제자들을 가르치는 모습.  사진 Petermowforth · CC BY-SA 3.0",
-		"caption": "박사가 메나스와 약 220판을 두며 남긴 기록. 처음에는 기계가 지기만 하다가, 스무 판쯤 뒤부터 비기기 시작했어요.  그래프 Matthew Scroggs · CC BY-SA 4.0 (1961년 원본을 다시 그림)",
+		"text": "도널드 미치 박사(전쟁 때는 앨런 튜링과 함께 암호를 풀었어요)와, 박사가 메나스와 약 220판을 둔 기록이에요. 처음엔 기계가 지기만 하다가, 스무 판쯤 뒤부터 비기기 시작했어요.",
+		"caption": "사진 Petermowforth · CC BY-SA 3.0   그래프 Matthew Scroggs · CC BY-SA 4.0",
 	},
 	{
 		"kind": "tray",
@@ -108,13 +108,13 @@ func _show_page() -> void:
 	Kit.set_text(_caption, p.get("caption", ""))
 	_caption.visible = p.has("caption")
 	_next.text = "한 판 두기" if _page == PAGES.size() - 1 else "다음"
-	# 신문은 본문이 조금 작고, 앨범은 본문이 사진 설명이라 설명 글자 크기로
+	# 신문·앨범은 사진이 주인공이라 본문이 조금 작다. 앨범의 caption은 출처 한 줄
 	var news := _kind() == "news"
 	var album := _kind() == "album"
 	_title.label_settings.font_size = int(Kit.R * (2.3 if news else 2.5))
-	_text.label_settings.font_size = int(Kit.R * (1.0 if album else (1.3 if news else 1.45)))
-	_text.label_settings.line_spacing = Kit.R * (0.3 if album else (0.5 if news else 0.6))
-	_text.label_settings.font_color = Kit.INK_SOFT if album else Kit.INK
+	_text.label_settings.font_size = int(Kit.R * (1.25 if album or news else 1.45))
+	_text.label_settings.line_spacing = Kit.R * (0.5 if album or news else 0.6)
+	_caption.label_settings.font_size = int(Kit.R * (0.9 if album else 1.0))
 
 
 func relayout() -> void:
@@ -136,14 +136,14 @@ static func _fit(tex: Texture2D, w: float) -> Vector2:
 func _layout_news() -> void:
 	var R := Kit.R
 	var vertical := portrait()
-	var cw := minf(size.x - pad.x * 2, R * 62)
+	var cw := minf(size.x - pad.x * 2, R * 60)
 	var inset := R * 2.0
-	var mast_h := R * 4.6
+	var mast_h := R * 3.4
 	var inner := cw - inset * 2
 	var y := mast_h + R * 0.9
 	y += Kit.place(_count, Vector2(inset, y), inner) + R * 0.3
 	y += Kit.place(_title, Vector2(inset, y), inner) + R * 0.9
-	var photo_w := inner if vertical else R * 24
+	var photo_w := inner if vertical else R * 27
 	_photo_a = Rect2(Vector2(inset, y), _fit(PHOTO_MENACE, photo_w))
 	var cap_h := Kit.place(_caption, Vector2(inset, _photo_a.end.y + R * 0.5), photo_w)
 	var left_bottom := _photo_a.end.y + R * 0.5 + cap_h
@@ -165,6 +165,13 @@ func _layout_album() -> void:
 	var vertical := portrait()
 	var cw := minf(size.x - pad.x * 2, R * 56)
 	var inset := R * 2.0
+	# 가로 화면: 사진 두 장을 한 뼘 간격으로 붙이고, 종이 폭도 거기에 맞춘다 (가운데가 비지 않게)
+	var h := R * 13.0
+	var wa := h * PHOTO_MICHIE.get_width() / PHOTO_MICHIE.get_height()
+	var wb := h * PHOTO_GRAPH.get_width() / PHOTO_GRAPH.get_height()
+	var gap := R * 1.8
+	if not vertical:
+		cw = minf(cw, wa + gap + wb + inset * 2)
 	var inner := cw - inset * 2
 	var y := inset
 	if vertical:
@@ -174,25 +181,19 @@ func _layout_album() -> void:
 		Kit.place(_count, Vector2(inset, y + R * 0.9), inner)
 		_count.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	y += Kit.place(_title, Vector2(inset, y), inner) + R * 1.0
-	var ch: float
+	# 사진 두 장 아래에 설명 한 덩어리, 맨 아래 출처 한 줄
 	if vertical:
 		_photo_a = Rect2(Vector2(inset + R, y), _fit(PHOTO_MICHIE, inner - R * 2))
-		y = _photo_a.end.y + R * 0.6
-		y += Kit.place(_text, Vector2(inset, y), inner) + R * 1.6
 		var gw := inner * 0.72
-		_photo_b = Rect2(Vector2(inset + (inner - gw) / 2, y), _fit(PHOTO_GRAPH, gw))
-		y = _photo_b.end.y + R * 0.6
-		ch = y + Kit.place(_caption, Vector2(inset, y), inner) + inset
+		_photo_b = Rect2(Vector2(inset + (inner - gw) / 2, _photo_a.end.y + R * 1.4), _fit(PHOTO_GRAPH, gw))
+		y = _photo_b.end.y + R * 1.0
 	else:
-		var h := R * 12.5
-		var wa := h * PHOTO_MICHIE.get_width() / PHOTO_MICHIE.get_height()
-		var wb := h * PHOTO_GRAPH.get_width() / PHOTO_GRAPH.get_height()
-		var gap := inner - wa - wb
-		_photo_a = Rect2(Vector2(inset, y), Vector2(wa, h))
-		_photo_b = Rect2(Vector2(inset + wa + gap, y), Vector2(wb, h))
-		var ca := Kit.place(_text, Vector2(_photo_a.position.x, y + h + R * 0.6), wa)
-		var cb := Kit.place(_caption, Vector2(_photo_b.position.x, y + h + R * 0.6), wb)
-		ch = y + h + R * 0.6 + maxf(ca, cb) + inset
+		var x0 := inset + (inner - wa - gap - wb) / 2
+		_photo_a = Rect2(Vector2(x0, y), Vector2(wa, h))
+		_photo_b = Rect2(Vector2(x0 + wa + gap, y), Vector2(wb, h))
+		y += h + R * 1.0
+	y += Kit.place(_text, Vector2(inset, y), inner) + R * 0.6
+	var ch := y + Kit.place(_caption, Vector2(inset, y), inner) + inset
 	_art.visible = false
 	_card.size = Vector2(cw, ch)
 	_card.position.x = (size.x - cw) / 2
@@ -278,12 +279,11 @@ func _paint_news(ci: Drawn, r: Rect2) -> void:
 	ci.draw_rect(Rect2(r.position + Vector2(R * 0.3, R * 0.5), r.size), Color(Kit.INK, 0.12))
 	ci.draw_rect(r, Kit.CREAM)
 	ci.draw_rect(r, Kit.INK, false, 2.0)
-	# 제호
-	var mast := Rect2(inset, R * 0.9, r.size.x - inset * 2, R * 2.6)
-	Kit.text(ci, Kit.F_TITLE, R * 2.4, "성냥갑 연구실 신문", mast, Kit.INK)
-	Kit.text(ci, Kit.F_LABEL, R * 0.95, "1961년 · 영국", Rect2(inset, R * 0.9, R * 12, R * 2.6), Kit.INK_SOFT, HORIZONTAL_ALIGNMENT_LEFT)
-	Kit.text(ci, Kit.F_LABEL, R * 0.95, "배우는 기계 특집", Rect2(r.size.x - inset - R * 12, R * 0.9, R * 12, R * 2.6), Kit.INK_SOFT, HORIZONTAL_ALIGNMENT_RIGHT)
-	var ly := R * 3.8
+	# 제호는 분위기만: 신문 이름과 날짜, 겹줄
+	var mast := Rect2(inset, R * 0.8, r.size.x - inset * 2, R * 2.0)
+	Kit.text(ci, Kit.F_TITLE, R * 1.8, "성냥갑 연구실 신문", mast, Kit.INK)
+	Kit.text(ci, Kit.F_LABEL, R * 0.95, "1961년 · 영국", mast, Kit.INK_SOFT, HORIZONTAL_ALIGNMENT_RIGHT)
+	var ly := R * 3.0
 	ci.draw_line(Vector2(inset, ly), Vector2(r.size.x - inset, ly), Kit.INK, 2.5)
 	ci.draw_line(Vector2(inset, ly + R * 0.25), Vector2(r.size.x - inset, ly + R * 0.25), Kit.INK, 1.0)
 	_photo(ci, PHOTO_MENACE, _photo_a, Kit.INK, R * 0.08)
