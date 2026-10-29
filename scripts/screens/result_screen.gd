@@ -31,22 +31,22 @@ func _init(s: Dictionary, ch: Array, games: int) -> void:
 
 func build() -> void:
 	var R := Kit.R
-	_title = Kit.label("오늘의 대결 결과", Kit.F_TITLE, R * 2.8, Kit.NAVY, HORIZONTAL_ALIGNMENT_CENTER)
+	_title = Kit.label("오늘의 수업 결과", Kit.F_TITLE, R * 2.8, Kit.NAVY, HORIZONTAL_ALIGNMENT_CENTER)
 	add_child(_title)
 	for p in [["나 %d" % score.kid, "kid"], ["비김 %d" % score.draw, "draw"], ["AI %d" % score.ai, "ai"]]:
 		var l := Kit.pill(p[0], p[1], 1.6)
 		_pills.append(l)
 		add_child(l)
-	var principle := "비긴 수에도 구슬이 하나씩 늘어요. AI는 지지 않는 법부터 배워요."
+	var principle := "비긴 수에도 구슬이 늘었어요. AI는 먼저 지지 않는 법부터 배워요."
 	if score.kid > 0:
-		principle = "내가 이긴 판에서 AI는 그 수의 구슬을 잃었어요. 다음 친구에게는 그 수를 덜 둘 거예요."
+		principle = "내가 이긴 수의 구슬이 빠졌어요. AI는 다음 친구에게 그 수를 덜 둘 거예요. 내가 AI를 조금 더 똑똑하게 만들었어요."
 	elif score.ai > 0:
-		principle = "AI가 이긴 수에는 구슬이 3개씩 늘었어요. 그 수는 점점 더 자주 나와요."
+		principle = "AI가 이긴 수에 구슬이 늘었어요. AI는 그 수를 더 자주 둘 거예요."
 	_up = Kit.label("늘어난 구슬 0개", Kit.F_LABEL, R * 1.6, Kit.TEAL)
 	_down = Kit.label("빠진 구슬 0개", Kit.F_LABEL, R * 1.6, Kit.RED_INK)
 	var specs := [
-		[Kit.CREAM, "나와 둔 판으로 바뀐 구슬", Kit.NAVY, Kit.INK, [principle]],
-		[Kit.NAVY, "이게 강화학습이에요", Kit.MUSTARD, Kit.CREAM, ["AI는 정답을 미리 아는 게 아니라, 해 보고 결과로 배워요. 잘된 선택은 더 자주, 안된 선택은 덜 하도록 스스로 고쳐요.", "오늘 %d번째 판까지 여러분이 함께 AI를 가르쳤어요." % today_games]],
+		[Kit.CREAM, "내가 바꾼 구슬", Kit.NAVY, Kit.INK, [principle]],
+		[Kit.NAVY, "이게 강화학습이에요", Kit.MUSTARD, Kit.CREAM, ["AI는 정답을 배운 게 아니에요. 해 보고, 결과가 좋으면 더 하고, 나쁘면 덜 해요. 바둑 AI도, 게임 AI도 이렇게 수백만 판을 스스로 두며 배워요.", "오늘 %d판째까지 여러분이 이 AI를 함께 가르쳤어요." % today_games]],
 	]
 	for i in specs.size():
 		var sp: Array = specs[i]

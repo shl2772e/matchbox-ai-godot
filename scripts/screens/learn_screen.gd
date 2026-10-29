@@ -6,9 +6,9 @@ extends ScreenBase
 signal next
 
 const LINE := {
-	"kid": "AI가 졌어요. 이번에 둔 수의 구슬을 하나씩 뺐어요. 다음엔 그 수를 덜 둬요.",
-	"ai": "AI가 이겼어요. 이번에 둔 수에 구슬을 3개씩 넣었어요. 그 수가 더 자주 나와요.",
-	"draw": "비겼어요. 이번에 둔 수에 구슬을 1개씩 넣었어요.",
+	"kid": "AI가 졌어요. 이번에 쓴 칸마다 구슬을 1개씩 뺐어요. 다음 친구와 둘 때 이 수는 조금 덜 나와요. 내가 AI에게 \"그 수는 안 돼\"를 가르친 거예요.",
+	"ai": "AI가 이겼어요. 이번에 쓴 칸마다 구슬을 3개씩 넣었어요. 이 수는 앞으로 더 자주 나와요. 내가 AI에게 \"그 수는 좋아\"를 가르친 거예요.",
+	"draw": "비겼어요. 이번에 쓴 칸마다 구슬을 1개씩 넣었어요. 지지 않은 것도 AI에겐 배울 거리예요.",
 }
 const SHOW_BEADS := 10
 const CHANGE_AT := 0.7
@@ -36,7 +36,7 @@ func _init(o: String, ch: Array, res: bool, is_last: bool) -> void:
 
 
 func build() -> void:
-	_title = Kit.label("배우는 순간", Kit.F_TITLE, Kit.R * 2.6, Kit.NAVY, HORIZONTAL_ALIGNMENT_CENTER)
+	_title = Kit.label("AI의 수업 시간", Kit.F_TITLE, Kit.R * 2.6, Kit.NAVY, HORIZONTAL_ALIGNMENT_CENTER)
 	add_child(_title)
 	var s: String = ("상자가 비어서 AI가 기권했어요. " if resigned else "") + (LINE[outcome] if not changes.is_empty() else "이번 판은 AI가 상자를 쓰지 않아서 바뀐 구슬이 없어요.")
 	_line = Kit.label(s, Kit.F_BODY, Kit.R * 1.4, Kit.INK, HORIZONTAL_ALIGNMENT_CENTER, true)

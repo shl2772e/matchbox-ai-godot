@@ -21,7 +21,7 @@ func build() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	_badge = Drawn.new(_paint_badge)
 	add_child(_badge)
-	_lead = Kit.label("성냥갑과 구슬로 배우는 틱택토 기계와 한 판 둬 볼래요?", Kit.F_BODY, Kit.R * 1.6, Kit.INK, HORIZONTAL_ALIGNMENT_CENTER, true)
+	_lead = Kit.label("이 AI는 이기는 법을 모른 채 태어났어요. 오늘 내가 가르쳐 볼까요?", Kit.F_BODY, Kit.R * 1.6, Kit.INK, HORIZONTAL_ALIGNMENT_CENTER, true)
 	add_child(_lead)
 	_go = Kit.pill("화면을 누르면 시작해요", "kid", 1.7)
 	_go.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -103,7 +103,7 @@ func _paint_today(ci: Drawn) -> void:
 	Kit.rrect(ci, r, Kit.CREAM, R * 0.6)
 	_dashed_frame(ci, r, R * 0.11)
 	var items := [
-		["오늘 AI와 둔 판", str(today.games), Kit.INK, Kit.RED_INK],
+		["오늘 AI를 가르친 판", str(today.games), Kit.INK, Kit.RED_INK],
 		["학생 승", str(today.kid), Kit.NAVY, Kit.NAVY],
 		["비김", str(today.draw), Kit.INK_SOFT, Kit.INK],
 		["AI 승", str(today.ai), Kit.RED_INK, Kit.RED_INK],

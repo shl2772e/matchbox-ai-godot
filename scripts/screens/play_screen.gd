@@ -54,7 +54,7 @@ func build() -> void:
 	_view = BoardView.new()
 	_view.cell_tapped.connect(_kid_tap)
 	add_child(_view)
-	_message = Kit.label("AI 차례예요. 성냥갑을 열어요.", Kit.F_BODY, Kit.R * 1.25, Kit.INK, HORIZONTAL_ALIGNMENT_CENTER, true)
+	_message = Kit.label("AI 차례예요. 지금 판 모양의 성냥갑을 찾아요.", Kit.F_BODY, Kit.R * 1.25, Kit.INK, HORIZONTAL_ALIGNMENT_CENTER, true)
 	add_child(_message)
 	_box = MatchboxView.new()
 	_box.percent = percent
@@ -137,7 +137,7 @@ func _ai_turn(b: Array) -> void:
 		_say("이 판 모양의 상자에 구슬이 하나도 없어요. 어떻게 둬도 질 것 같대요. AI가 기권했어요.")
 		later(2.6, _finish.bind(b, "kid", true))
 		return
-	_say("AI가 성냥갑을 열었어요. 구슬이 많은 칸일수록 잘 나와요.")
+	_say("상자를 열었어요. 어느 칸에 구슬이 제일 많은지 보세요.")
 	later(OPEN_S, _lift_bead.bind(b, c.move))
 
 
@@ -202,7 +202,7 @@ func _kid_tap(cell: int) -> void:
 		_finish(nb, o)
 	else:
 		phase = "ai"
-		_say("AI 차례예요.")
+		_say("AI 차례예요. 지금 판 모양의 성냥갑을 찾아요.")
 		later(0.45, _ai_turn.bind(nb))
 
 
@@ -212,7 +212,7 @@ func _finish(b: Array, o: String, resigned := false) -> void:
 	_view.show_line(Ttt.win_line(b))
 	Sfx.done()
 	if not resigned:
-		_say({"kid": "내가 이겼어요.", "ai": "AI가 이겼어요.", "draw": "비겼어요."}[o])
+		_say({"kid": "내가 이겼어요. AI가 지는 수를 배울 차례예요.", "ai": "AI가 이겼어요. 이 수를 더 좋아하게 돼요.", "draw": "비겼어요. 비기는 것도 AI에겐 작은 상이에요."}[o])
 	later(END_S, round_end.emit.bind({"outcome": o, "moves": _moves, "resigned": resigned}))
 
 
@@ -266,4 +266,4 @@ func _paint_foot(ci: Drawn) -> void:
 	x += R * 3.6
 	Kit.mark_x(ci, Vector2(x + R * 0.6, h / 2), R * 3.2)
 	Kit.text(ci, Kit.F_LABEL, fs, "나", Rect2(x + R * 1.7, 0, R * 3, h), Kit.INK, HORIZONTAL_ALIGNMENT_LEFT)
-	Kit.text(ci, Kit.F_LABEL, fs, "구슬이 많은 칸일수록 AI가 자주 골라요", Rect2(0, 0, r.size.x - R * 1.0, h), Kit.INK_SOFT, HORIZONTAL_ALIGNMENT_RIGHT)
+	Kit.text(ci, Kit.F_LABEL, fs, "구슬 수 = AI가 그 칸을 좋아하는 정도", Rect2(0, 0, r.size.x - R * 1.0, h), Kit.INK_SOFT, HORIZONTAL_ALIGNMENT_RIGHT)
