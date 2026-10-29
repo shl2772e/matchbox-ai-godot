@@ -21,7 +21,7 @@
 - GDScript에서 여러 줄 람다를 함수 인자로 넘기지 않는다. 메서드 + `bind()`를 쓴다.
 
 ## 명령어 (Godot 경로: `%LOCALAPPDATA%\Microsoft\WinGet\Packages\GodotEngine.GodotEngine_Microsoft.Winget.Source_8wekyb3d8bbwe\`)
-- 실행: `run.bat` (전체화면, F11로 창 모드)
+- 실행: `run.bat` (전체화면, F11로 창 모드). **run.bat에는 한글을 쓰지 않는다** (cmd가 UTF-8 한글을 읽다 깨진다), 줄 끝은 CRLF.
 - 편집기: `Godot_v4.7.2-stable_win64.exe --path . -e`
 - 테스트: `Godot_v4.7.2-stable_win64_console.exe --headless --path . --script res://tests/run_tests.gd`
 - 화면 점검(3판 자동 진행 후 PNG 저장): `... --path . --resolution 1920x1080 -- --qa=<폴더>` (세로는 `1080x1920`). 저장된 두뇌는 끝나면 되돌린다.
