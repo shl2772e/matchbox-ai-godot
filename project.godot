@@ -1,0 +1,40 @@
+; Godot 4 프로젝트 설정. 편집기에서 바꾸면 이 파일이 다시 쓰인다.
+
+config_version=5
+
+[application]
+
+config/name="성냥갑 AI"
+config/description="성냥갑과 구슬로 배우는 틱택토 기계 (MENACE, 1961) 체험"
+config/version="0.1.0"
+run/main_scene="res://main.tscn"
+config/use_custom_user_dir=true
+config/custom_user_dir_name="matchbox-ai-godot"
+config/features=PackedStringArray("4.7", "GL Compatibility")
+boot_splash/bg_color=Color(0.917647, 0.858824, 0.752941, 1)
+boot_splash/show_image=false
+config/icon="res://icon.svg"
+
+[autoload]
+
+Sfx="*res://scripts/sfx.gd"
+
+[display]
+
+window/size/viewport_width=1920
+window/size/viewport_height=1080
+window/size/window_width_override=1600
+window/size/window_height_override=900
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+window/energy_saving/keep_screen_on=true
+
+[gui]
+
+theme/custom_font="res://assets/fonts/GowunBatang-Regular.ttf"
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+environment/defaults/default_clear_color=Color(0.917647, 0.858824, 0.752941, 1)
