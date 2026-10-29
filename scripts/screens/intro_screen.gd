@@ -36,6 +36,8 @@ const TRAY := [4, 1, 2, 0, 3, 1, 2, 4, 1]
 const PHOTO_MENACE := preload("res://assets/photos/menace-2018.jpg")
 const PHOTO_MICHIE := preload("res://assets/photos/michie-1986.jpg")
 const PHOTO_GRAPH := preload("res://assets/photos/michie-graph.png")
+const PHOTO_PORTRAIT := preload("res://assets/photos/michie-2003.jpg")
+const PORTRAIT_CAPTION := "도널드 미치 박사 (1923~2007)\n사진 Donald Michie · CC BY 4.0"
 
 var _page := 0
 var _card: Drawn
@@ -45,12 +47,14 @@ var _count: Label
 var _title: Label
 var _text: Label
 var _caption: Label
+var _cap2: Label  ## 신문의 인물 사진 설명
 var _skip: Button
 var _next: Button
 var _time := 0.0
 ## 사진 자리 (카드 좌표). 그리기와 배치가 같이 쓴다
 var _photo_a := Rect2()
 var _photo_b := Rect2()
+var _photo_c := Rect2()
 
 
 func build() -> void:
@@ -67,7 +71,9 @@ func build() -> void:
 	_text.label_settings.line_spacing = Kit.R * 0.6
 	_caption = Kit.label("", Kit.F_BODY, Kit.R * 1.0, Kit.INK_SOFT, HORIZONTAL_ALIGNMENT_LEFT, true)
 	_caption.label_settings.line_spacing = Kit.R * 0.3
-	for l in [_count, _title, _text, _caption]:
+	_cap2 = Kit.label(PORTRAIT_CAPTION, Kit.F_BODY, Kit.R * 1.0, Kit.INK_SOFT, HORIZONTAL_ALIGNMENT_LEFT, true)
+	_cap2.label_settings.line_spacing = Kit.R * 0.3
+	for l in [_count, _title, _text, _caption, _cap2]:
 		_content.add_child(l)
 	_skip = Kit.button("건너뛰기", "soft")
 	_next = Kit.button("다음", "primary", true)
@@ -107,6 +113,7 @@ func _show_page() -> void:
 	Kit.set_text(_text, p.text)
 	Kit.set_text(_caption, p.get("caption", ""))
 	_caption.visible = p.has("caption")
+	_cap2.visible = _kind() == "news"
 	_next.text = "한 판 두기" if _page == PAGES.size() - 1 else "다음"
 	# 신문·앨범은 사진이 주인공이라 본문이 조금 작다. 앨범의 caption은 출처 한 줄
 	var news := _kind() == "news"
@@ -133,6 +140,12 @@ static func _fit(tex: Texture2D, w: float) -> Vector2:
 	return Vector2(w, w * tex.get_height() / tex.get_width())
 
 
+## 글을 사진 오른쪽에, 세로 가운데 맞춰 놓는다
+static func _place_beside(l: Label, photo: Rect2, w: float) -> void:
+	var h := Kit.place(l, Vector2(photo.end.x + Kit.R * 1.0, photo.position.y), w)
+	l.position.y = photo.position.y + (photo.size.y - h) / 2
+
+
 func _layout_news() -> void:
 	var R := Kit.R
 	var vertical := portrait()
@@ -147,14 +160,22 @@ func _layout_news() -> void:
 	_photo_a = Rect2(Vector2(inset, y), _fit(PHOTO_MENACE, photo_w))
 	var cap_h := Kit.place(_caption, Vector2(inset, _photo_a.end.y + R * 0.5), photo_w)
 	var left_bottom := _photo_a.end.y + R * 0.5 + cap_h
+	# 본문 아래에 박사 초상(정사각형)과 그 설명을 한 줄로
+	var ps := R * 7.0
 	var ch: float
 	if vertical:
 		y = left_bottom + R * 1.2
-		ch = y + Kit.place(_text, Vector2(inset, y), inner) + inset
+		y += Kit.place(_text, Vector2(inset, y), inner) + R * 1.2
+		_photo_c = Rect2(Vector2(inset, y), Vector2(ps, ps))
+		_place_beside(_cap2, _photo_c, inner - ps - R * 1.0)
+		ch = _photo_c.end.y + inset
 	else:
 		var tx := inset + photo_w + R * 1.6
-		var th := Kit.place(_text, Vector2(tx, y), cw - tx - inset)
-		ch = maxf(left_bottom, y + th) + inset
+		var tw := cw - tx - inset
+		var th := Kit.place(_text, Vector2(tx, y), tw)
+		_photo_c = Rect2(Vector2(tx, y + th + R * 1.2), Vector2(ps, ps))
+		_place_beside(_cap2, _photo_c, tw - ps - R * 1.0)
+		ch = maxf(left_bottom, _photo_c.end.y) + inset
 	_art.visible = false
 	_card.size = Vector2(cw, ch)
 	_card.position.x = (size.x - cw) / 2
@@ -287,6 +308,7 @@ func _paint_news(ci: Drawn, r: Rect2) -> void:
 	ci.draw_line(Vector2(inset, ly), Vector2(r.size.x - inset, ly), Kit.INK, 2.5)
 	ci.draw_line(Vector2(inset, ly + R * 0.25), Vector2(r.size.x - inset, ly + R * 0.25), Kit.INK, 1.0)
 	_photo(ci, PHOTO_MENACE, _photo_a, Kit.INK, R * 0.08)
+	_photo(ci, PHOTO_PORTRAIT, _photo_c, Kit.INK, R * 0.08)
 
 
 ## 앨범: 갈색 종이 위에 사진 두 장, 모서리에 테이프

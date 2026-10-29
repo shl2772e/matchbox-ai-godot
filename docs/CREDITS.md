@@ -6,6 +6,7 @@
 | --- | --- | --- | --- | --- |
 | `assets/photos/menace-2018.jpg` | 매튜 스크록스가 2018년에 다시 만든 MENACE (성냥갑 304개) | Matthew Scroggs | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | https://commons.wikimedia.org/wiki/File:Mscroggs-MENACE-cropped.jpg |
 | `assets/photos/michie-1986.jpg` | 도널드 미치가 1986년 튜링 연구소에서 가르치는 모습 | Petermowforth | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/) | https://commons.wikimedia.org/wiki/File:Donald_Michie_teaching.jpg |
+| `assets/photos/michie-2003.jpg` | 도널드 미치 초상 (2003년) | Donald Michie (Austin Tate가 관리하는 홈페이지에서 올림) | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) | https://commons.wikimedia.org/wiki/File:Donald-Michie-2003.jpg |
 | `assets/photos/michie-graph.png` | 미치가 MENACE와 둔 약 220판의 첫 상자 구슬 변화 (1961년 Penguin Science Survey 2 "Trial and Error"의 그래프를 다시 그린 것) | Matthew Scroggs | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | https://commons.wikimedia.org/wiki/File:Michie-MENACE-graph.png |
 
 바꾼 점: 앱 크기에 맞게 줄였다 (가로 1400·1200·1000px). 그 밖에는 손대지 않았다.
