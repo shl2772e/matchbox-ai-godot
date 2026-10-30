@@ -20,14 +20,19 @@ func _ready() -> void:
 	Sfx.enabled = settings.sound
 	brain = Store.load_brain()
 	if brain.is_empty():
+		if FileAccess.file_exists(Store.BRAIN):
+			push_warning("저장된 두뇌를 읽을 수 없어 조금 배운 AI로 새로 시작해요.")
 		brain = SelfPlay.trained_brain("some")
 		Store.save_brain(brain)
 	today = Store.load_today()
 	resized.connect(_on_resized)
 	_last_touch = Time.get_ticks_msec()
 	to_idle.call_deferred()
+	# 내보낸 실행 파일은 전체화면으로 시작한다 (편집기에서 실행할 때는 창)
+	if OS.has_feature("template"):
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
 	for a in OS.get_cmdline_user_args():
-		if a.begins_with("--qa="):
+		if a.begins_with("--qa=") and ResourceLoader.exists("res://tests/qa.gd"):
 			var qa: Node = load("res://tests/qa.gd").new()
 			qa.set("out_dir", a.substr(5))
 			add_child(qa)

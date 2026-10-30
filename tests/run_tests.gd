@@ -86,5 +86,21 @@ func _init() -> void:
 	check([t.games, t.kid, t.ai, t.draw] == [2, 1, 1, 0], "오늘 기록 더하기")
 	check(Today.roll(t, "2026-10-29").games == 0, "날짜 바뀌면 새로")
 
+	# 저장: 임시 파일 → .bak → 본 파일. 본 파일이 깨지면 .bak을 읽는다
+	var path := "user://test-store.json"
+	for suffix in ["", ".bak", ".tmp"]:
+		DirAccess.remove_absolute(path + suffix)
+	check(Store.write_safe(path, {"a": 1}), "저장 쓰기")
+	check(Store.read_safe(path).a == 1, "저장 읽기")
+	check(Store.write_safe(path, {"a": 2}) and Store.read_safe(path).a == 2, "덮어쓰기")
+	check(FileAccess.file_exists(path + ".bak") and Store.read_safe(path + ".bak").a == 1, "예비 파일에 전 내용")
+	check(not FileAccess.file_exists(path + ".tmp"), "임시 파일 안 남음")
+	var broken := FileAccess.open(path, FileAccess.WRITE)
+	broken.store_string("{\"a\": ")
+	broken.close()
+	check(Store.read_safe(path).a == 1, "깨진 파일이면 예비 파일")
+	for suffix in ["", ".bak", ".tmp"]:
+		DirAccess.remove_absolute(path + suffix)
+
 	print("테스트 %d개 중 %d개 통과" % [_count, _count - _fails])
 	quit(1 if _fails > 0 else 0)
