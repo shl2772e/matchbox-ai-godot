@@ -35,10 +35,13 @@ func _draw() -> void:
 	for c in centers:
 		draw_circle(c, bump - border, Kit.CREAM, true, -1.0, true)
 	Kit.rrect(self, inner.grow(-border), Kit.CREAM, R * 2)
-	# 꼬리: 풍선에서 주인 쪽으로 작아지는 동그라미 셋
-	var from := Vector2(clampf(tail_to.x, inner.position.x + R * 2, inner.end.x - R * 2), clampf(tail_to.y, inner.position.y, inner.end.y))
+	# 꼬리: 풍선의 주인 쪽 변 가운데에서 출발해 주인에게 비스듬히 이어지는 동그라미 셋
+	var below := tail_to.y > inner.end.y
+	var from := Vector2(inner.get_center().x, inner.end.y + bump * 1.1 if below else inner.position.y - bump * 1.1)
+	if tail_to.y >= inner.position.y and tail_to.y <= inner.end.y:
+		from = Vector2(inner.position.x if tail_to.x < inner.position.x else inner.end.x, inner.get_center().y)
 	for k in 3:
-		var p := from.lerp(tail_to, [0.18, 0.5, 0.8][k])
+		var p := from.lerp(tail_to, [0.22, 0.52, 0.8][k])
 		var rad: float = R * [0.62, 0.44, 0.3][k]
 		draw_circle(p + Vector2(0, R * 0.2), rad, Color(Kit.INK, 0.08), true, -1.0, true)
 		draw_circle(p, rad, Kit.LINE, true, -1.0, true)
