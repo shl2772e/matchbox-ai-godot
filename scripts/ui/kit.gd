@@ -218,18 +218,18 @@ static func wrapped_height(l: Label, width: float) -> float:
 	return lines * ls.font.get_height(ls.font_size) + (lines - 1) * ls.line_spacing + 2.0
 
 
-## 버튼: primary(빨강) / soft(크림) / ghost
+## 버튼: primary(빨강) / soft(크림) / ghost / danger(크림 바탕에 빨간 테두리·글자)
 static func button(s: String, kind := "primary", big := false) -> Button:
 	var b := Button.new()
 	b.text = s
 	b.focus_mode = Control.FOCUS_NONE
 	var fs := R * (1.6 if big else 1.3)
-	var bg: Color = RED if kind == "primary" else (CREAM if kind == "soft" else Color.TRANSPARENT)
-	var fg: Color = CREAM if kind == "primary" else (INK if kind == "soft" else INK_SOFT)
+	var bg: Color = RED if kind == "primary" else (CREAM if kind == "soft" or kind == "danger" else Color.TRANSPARENT)
+	var fg: Color = CREAM if kind == "primary" else (RED_INK if kind == "danger" else (INK if kind == "soft" else INK_SOFT))
 	var shadow: Color = RED_DARK if kind == "primary" else LINE
 	var pad := Vector2(2.0 if big else 1.4, 0.8 if big else 0.6) * R
 	for state in ["normal", "hover", "pressed", "disabled"]:
-		var s2 := box(bg, R * 0.6)
+		var s2 := box(bg, R * 0.6, R * 0.11 if kind == "danger" else 0.0, RED)
 		var down: bool = state == "pressed"
 		s2.content_margin_left = pad.x
 		s2.content_margin_right = pad.x
@@ -259,3 +259,16 @@ static func pill(s: String, kind: String, size := 1.2) -> Label:
 	st.content_margin_bottom = R * 0.2 * size / 1.2
 	l.add_theme_stylebox_override("normal", st)
 	return l
+
+
+## 자물쇠 (선생님 버튼). open이면 고리가 열려 있다. 웹 앱 Art.tsx의 24칸 아이콘을 옮겼다
+static func lock(ci: CanvasItem, rect: Rect2, open: bool, color: Color) -> void:
+	var k := rect.size.x / 24.0
+	var o := rect.position
+	var w := 2.0 * k
+	rrect(ci, Rect2(o + Vector2(5, 11) * k, Vector2(14, 10) * k), color, 2 * k)
+	var c := o + Vector2(12, 7) * k
+	ci.draw_arc(c, 4 * k, PI, TAU if not open else TAU * 0.92, 16, color, w, true)
+	ci.draw_line(o + Vector2(8, 7) * k, o + Vector2(8, 11) * k, color, w, true)
+	if not open:
+		ci.draw_line(o + Vector2(16, 7) * k, o + Vector2(16, 11) * k, color, w, true)

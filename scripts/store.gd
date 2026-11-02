@@ -78,3 +78,32 @@ static func load_settings() -> Dictionary:
 
 static func save_settings(s: Dictionary) -> void:
 	write_safe(SETTINGS, s)
+
+
+# ---------- 선생님 비밀번호 ----------
+
+const TEACHER := "user://teacher.json"
+const DEFAULT_PASSWORD := "admin"
+const PASSWORD_MAX := 12
+const PASSWORD_CHARS := "abcdefghijklmnopqrstuvwxyz0123456789"
+
+
+## 영문 소문자와 숫자로 1~12글자
+static func is_valid_password(p: String) -> bool:
+	if p.length() < 1 or p.length() > PASSWORD_MAX:
+		return false
+	for ch in p:
+		if not PASSWORD_CHARS.contains(ch):
+			return false
+	return true
+
+
+static func load_password() -> String:
+	var data: Variant = read_safe(TEACHER)
+	if typeof(data) == TYPE_DICTIONARY and typeof(data.get("password")) == TYPE_STRING and is_valid_password(data.password):
+		return data.password
+	return DEFAULT_PASSWORD
+
+
+static func save_password(p: String) -> void:
+	write_safe(TEACHER, {"password": p})

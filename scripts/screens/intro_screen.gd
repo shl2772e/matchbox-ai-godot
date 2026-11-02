@@ -77,6 +77,7 @@ func build() -> void:
 		_content.add_child(l)
 	_skip = Kit.button("건너뛰기", "soft")
 	_next = Kit.button("다음", "primary", true)
+	_next.custom_minimum_size.x = Kit.R * 10.5  # "한 판 두기"도 같은 너비
 	_skip.pressed.connect(func() -> void: done.emit())
 	_next.pressed.connect(_on_next)
 	add_child(_skip)
@@ -253,18 +254,17 @@ func _layout_art() -> void:
 	_card.position.x = (size.x - cw) / 2
 
 
+## 버튼은 화면 오른쪽 아래 한자리에 고정한다 (터치패널에서 손이 헤매지 않게). 카드는 그 위 공간의 가운데
 func _place_buttons() -> void:
 	var R := Kit.R
-	var bh := _next.get_combined_minimum_size().y
-	var ch := _card.size.y
-	var top := maxf(pad.y, (size.y - ch - R * 2 - bh) / 2)
-	_card.position.y = top
-	_content.size = _card.size
 	_next.size = _next.get_combined_minimum_size()
 	_skip.size = _skip.get_combined_minimum_size()
-	var by := top + ch + R * 2
-	_next.position = Vector2(_card.position.x + _card.size.x - _next.size.x, by)
-	_skip.position = Vector2(_next.position.x - R * 1.2 - _skip.size.x, by + (bh - _skip.size.y) / 2)
+	var by := size.y - pad.y - _next.size.y
+	_next.position = Vector2(size.x - pad.x - _next.size.x, by)
+	_skip.position = Vector2(_next.position.x - R * 1.2 - _skip.size.x, by + (_next.size.y - _skip.size.y) / 2)
+	var ch := _card.size.y
+	_card.position.y = maxf(pad.y, pad.y + (by - R - pad.y - ch) / 2)
+	_content.size = _card.size
 
 
 func enter() -> void:

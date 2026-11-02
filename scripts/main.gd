@@ -2,6 +2,7 @@ extends Control
 ## 화면 흐름: 대기 → 안내 → (놀이 → 배우는 순간) × 판 수 → 결과 → 대기.
 ## AI 두뇌(구슬)는 학생이 바뀌어도 이어진다. 처음 켜면 "조금 배운 AI"로 시작한다.
 ## F11: 전체화면 켜고 끄기. 60초 동안 아무도 누르지 않으면 대기 화면으로 돌아간다.
+## 오른쪽 위 자물쇠는 선생님 메뉴(TeacherLayer)다.
 
 const IDLE_MS := 60000
 
@@ -12,6 +13,7 @@ var screen: ScreenBase
 var round_i := 1
 var score := {"kid": 0, "draw": 0, "ai": 0}
 var session_changes := []
+var teacher: TeacherLayer
 var _last_touch := 0
 
 
@@ -27,6 +29,15 @@ func _ready() -> void:
 	today = Store.load_today()
 	resized.connect(_on_resized)
 	_last_touch = Time.get_ticks_msec()
+	teacher = TeacherLayer.new()
+	teacher.settings = settings
+	teacher.brain_games = brain.games
+	teacher.version = ProjectSettings.get_setting("application/config/version", "")
+	teacher.go_home.connect(to_idle)
+	teacher.level_picked.connect(_on_level_picked)
+	teacher.setting_changed.connect(_on_setting_changed)
+	teacher.clear_today.connect(_on_clear_today)
+	add_child(teacher)
 	to_idle.call_deferred()
 	# 내보낸 실행 파일은 전체화면으로 시작한다 (편집기에서 실행할 때는 창)
 	if OS.has_feature("template"):
@@ -67,7 +78,7 @@ func _input(event: InputEvent) -> void:
 
 
 func _process(_delta: float) -> void:
-	if Time.get_ticks_msec() - _last_touch > IDLE_MS and not (screen is IdleScreen):
+	if Time.get_ticks_msec() - _last_touch > IDLE_MS and not (screen is IdleScreen) and not teacher.busy():
 		_last_touch = Time.get_ticks_msec()
 		to_idle()
 
@@ -121,6 +132,7 @@ func _on_round_end(end: Dictionary) -> void:
 	score = score.duplicate()
 	score[end.outcome] += 1
 	session_changes.append_array(changes)
+	teacher.brain_games = brain.games
 	var s := LearnScreen.new(end.outcome, changes, end.resigned, round_i >= settings.rounds)
 	s.next.connect(_after_learn)
 	_show(s)
@@ -134,3 +146,32 @@ func _after_learn() -> void:
 	else:
 		round_i += 1
 		start_play()
+
+
+# ---------- 선생님 메뉴 ----------
+
+## AI 고르기: 새 두뇌로 바꾸고 오늘 기록도 새로 시작한다 (웹 앱 replaceBrain과 같음)
+func _on_level_picked(level: String) -> void:
+	brain = SelfPlay.trained_brain(level)
+	Store.save_brain(brain)
+	today = Today.fresh()
+	Store.save_today(today)
+	teacher.brain_games = brain.games
+	to_idle()
+
+
+func _on_setting_changed(key: String, value: Variant) -> void:
+	settings[key] = value
+	Store.save_settings(settings)
+	if key == "sound":
+		Sfx.enabled = value
+	elif key == "percent" and screen is PlayScreen:
+		screen._box.percent = value
+		screen._box.queue_redraw()
+
+
+func _on_clear_today() -> void:
+	today = Today.fresh()
+	Store.save_today(today)
+	if screen is IdleScreen:
+		to_idle()

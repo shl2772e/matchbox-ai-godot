@@ -35,6 +35,8 @@ func _process(delta: float) -> void:
 	if s is IdleScreen:
 		if _wait > 1.5 and not _shots.has("1-idle"):
 			_shot("1-idle")
+		elif _shots.has("1-idle") and not _shots.has("0-teacher-done"):
+			_teacher_shots(get_parent().teacher)
 		elif _wait > 2.0 and _shots.has("1-idle"):
 			if _shots.has("9-result"):
 				_finish()
@@ -55,6 +57,10 @@ func _process(delta: float) -> void:
 		if s.phase == "kid" and _wait > 0.6:
 			if not _shots.has(name + "-kid"):
 				_shot(name + "-kid")
+			elif _wait < 3.4:
+				pass  # 손가락 안내가 나올 때까지 기다린다
+			elif not _shots.has(name + "-hint"):
+				_shot(name + "-hint")
 			else:
 				_wait = 0.0
 				var empties := Ttt.empty_cells(s._board)
@@ -81,3 +87,24 @@ func _finish() -> void:
 	Store.save_today(_today_backup)
 	print("QA 끝: ", out_dir)
 	get_tree().quit()
+
+
+## 선생님 메뉴: 비밀번호 창 → 메뉴 → AI 고르기 순서로 찍고 닫는다 (비밀번호는 안 바꾼다)
+func _teacher_shots(t: TeacherLayer) -> void:
+	if _wait > 1.8 and not _shots.has("0-teacher-password"):
+		t._open_password("login")
+		t._pw_key("a")
+		_shot("0-teacher-password")
+	elif _wait > 2.6 and not _shots.has("0-teacher-menu"):
+		t._close()
+		t._unlocked_until = Time.get_ticks_msec() + 60000
+		t._open_menu()
+		_shot("0-teacher-menu")
+	elif _wait > 3.4 and not _shots.has("0-teacher-picker"):
+		t._open_picker()
+		_shot("0-teacher-picker")
+	elif _wait > 4.2 and _shots.has("0-teacher-picker"):
+		t._close()
+		t._unlocked_until = 0
+		_shots["0-teacher-done"] = true
+		_wait = 0.0

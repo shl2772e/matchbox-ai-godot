@@ -102,5 +102,9 @@ func _init() -> void:
 	for suffix in ["", ".bak", ".tmp"]:
 		DirAccess.remove_absolute(path + suffix)
 
+	# 선생님 비밀번호 규칙
+	check(Store.is_valid_password("admin") and Store.is_valid_password("a1") and Store.is_valid_password("abcdefghij12"), "비밀번호 허용")
+	check(not Store.is_valid_password("") and not Store.is_valid_password("Admin") and not Store.is_valid_password("abcdefghij123") and not Store.is_valid_password("한글"), "비밀번호 거부")
+
 	print("테스트 %d개 중 %d개 통과" % [_count, _count - _fails])
 	quit(1 if _fails > 0 else 0)

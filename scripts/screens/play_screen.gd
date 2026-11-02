@@ -2,6 +2,10 @@ class_name PlayScreen
 extends ScreenBase
 ## 놀이 한 판. AI가 먼저 둔다. AI 차례 연출은 1.2초 안 (뜸 들이기·번쩍임 없음):
 ## 서랍이 열림(0.45초) → 고른 칸의 구슬이 떠오름(0.2초) → 구슬이 판으로 날아가 ○가 됨(0.4초).
+##
+## 성냥갑 서랍은 생각 풍선 안에 있고, 풍선 꼬리는 성냥갑 기계 캐릭터("AI")로 이어진다 (여기는 AI 머릿속).
+## 무대 조명: 내 차례엔 풍선이 흐려지고 판이 밝아지며 손가락 안내가 뜬다. AI 차례엔 반대.
+## AI가 구슬을 꺼내는 동안 기계의 톱니바퀴가 돈다.
 
 signal round_end(result: Dictionary)
 
@@ -9,6 +13,8 @@ const OPEN_S := 0.45
 const LIFT_S := 0.2
 const FLY_S := 0.4
 const END_S := 1.3
+## 내 차례에 풍선(AI 머릿속)이 흐려지는 정도
+const MIND_DIM := 0.55
 
 var brain: Dictionary
 var round_i: int
@@ -28,7 +34,12 @@ var _round: Label
 var _pills: Array[Label] = []
 var _view: BoardView
 var _message: Label
+## 풍선 + 서랍 묶음과, 내 차례에 그 위를 덮어 흐리게 하는 종이색 덮개
+var _mind: Control
+var _dimmer: ColorRect
+var _bubble: ThoughtBubble
 var _box: MatchboxView
+var _machine: MachineView
 var _foot: Drawn
 var _fly: Drawn
 
@@ -56,10 +67,21 @@ func build() -> void:
 	add_child(_view)
 	_message = Kit.label("AI 차례예요. 지금 판 모양의 성냥갑을 찾아요.", Kit.F_BODY, Kit.R * 1.25, Kit.INK, HORIZONTAL_ALIGNMENT_CENTER, true)
 	add_child(_message)
+	_mind = Control.new()
+	_mind.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_mind)
+	_bubble = ThoughtBubble.new()
+	_mind.add_child(_bubble)
 	_box = MatchboxView.new()
 	_box.percent = percent
 	_box.shape = _board
-	add_child(_box)
+	_mind.add_child(_box)
+	_dimmer = ColorRect.new()
+	_dimmer.color = Color(Kit.PAPER, 0.0)
+	_dimmer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_dimmer)
+	_machine = MachineView.new()
+	add_child(_machine)
 	_foot = Drawn.new(_paint_foot)
 	add_child(_foot)
 	_fly = Drawn.new(_paint_fly)
@@ -70,11 +92,11 @@ func build() -> void:
 func relayout() -> void:
 	var R := Kit.R
 	var w := size.x - pad.x * 2
-	# 머리: 이름표 왼쪽, 판 수와 점수 오른쪽
+	# 머리: 이름표 왼쪽, 판 수와 점수 오른쪽 (오른쪽 끝 3.2R는 선생님 버튼 자리)
 	var head_h := R * 3.4
 	_brand.position = pad + Vector2(R * 0.4, R * 0.2)
 	_brand.size = Vector2(R * 13, head_h - R * 0.4)
-	var x := size.x - pad.x
+	var x := size.x - pad.x - R * 3.2
 	for i in range(_pills.size() - 1, -1, -1):
 		var l := _pills[i]
 		l.size = l.get_combined_minimum_size()
@@ -87,18 +109,24 @@ func relayout() -> void:
 	var foot_h := R * 2.4
 	_foot.position = Vector2(pad.x, size.y - pad.y - foot_h)
 	_foot.size = Vector2(w, foot_h)
-	# 가운데: 판 + 성냥갑
+	# 가운데: 판 + 생각 풍선(서랍) + 기계
 	var top := pad.y + head_h + R
 	var bottom := _foot.position.y - R
-	var msg_h := R * 3.4
+	var msg_h := R * (3.4 if portrait() else 5.8)  # 가로는 세 줄까지 (적은 칸이 나왔을 때 한마디 더)
+	var machine_size := Vector2(R * 10.0, R * 4.8)
+	var bubble_pad := R * 1.3
 	if portrait():
 		var bs := minf(w * 0.82, (bottom - top) * 0.45)
 		_view.position = Vector2((size.x - bs) / 2, top)
 		_view.size = Vector2(bs, bs)
 		Kit.place(_message, Vector2(pad.x, top + bs + R * 1.2), w)
-		var by := top + bs + R * 1.2 + msg_h + R
-		_box.position = Vector2(pad.x, by)
-		_box.size = Vector2(w, bottom - by)
+		# 기계는 왼쪽 위, 풍선은 그 아래 (꼬리가 위로 올라간다)
+		var my := top + bs + R * 1.2 + msg_h + R * 0.6
+		_machine.position = Vector2(pad.x, my)
+		_machine.size = machine_size
+		var by := my + machine_size.y + R * 1.6
+		_bubble.position = Vector2(pad.x, by)
+		_bubble.size = Vector2(w, bottom - by)
 	else:
 		var col := R * 26
 		var bs := minf(R * 24, bottom - top - msg_h - R * 0.8)
@@ -106,8 +134,17 @@ func relayout() -> void:
 		_view.position = Vector2(pad.x + (col - bs) / 2, bt)
 		_view.size = Vector2(bs, bs)
 		Kit.place(_message, Vector2(pad.x, bt + bs + R * 1.2), col)
-		_box.position = Vector2(pad.x + col + R * 2, top)
-		_box.size = Vector2(size.x - pad.x - _box.position.x, bottom - top)
+		# 풍선은 오른쪽 위, 기계는 풍선 아래 왼쪽 (꼬리가 아래로 내려간다)
+		var rx := pad.x + col + R * 2
+		_bubble.position = Vector2(rx, top)
+		_bubble.size = Vector2(size.x - pad.x - rx, bottom - top - machine_size.y - R * 1.2)
+		_machine.position = Vector2(rx + R * 0.6, bottom - machine_size.y)
+		_machine.size = machine_size
+	_box.position = _bubble.position + Vector2(bubble_pad, bubble_pad)
+	_box.size = _bubble.size - Vector2(bubble_pad, bubble_pad) * 2
+	_bubble.tail_to = _machine.position + _machine.head() - _bubble.position
+	_dimmer.position = _bubble.position - Vector2(Kit.R * 1.6, Kit.R * 1.6)
+	_dimmer.size = _bubble.size + Vector2(Kit.R * 3.2, Kit.R * 3.2)
 	_fly.size = size
 
 
@@ -121,9 +158,16 @@ func _say(s: String) -> void:
 	create_tween().tween_property(_message, "modulate:a", 1.0, 0.25)
 
 
+## 무대 조명: 내 차례면 풍선이 흐려지고 판이 밝아진다
+func _spotlight(kid: bool) -> void:
+	_view.active = kid
+	create_tween().tween_property(_dimmer, "color:a", 1.0 - MIND_DIM if kid else 0.0, 0.35).set_trans(Tween.TRANS_SINE)
+
+
 func _ai_turn(b: Array) -> void:
 	phase = "ai"
 	_view.locked = true
+	_spotlight(false)
 	var c := Menace.choose_move(brain, b, _rng)
 	if c.kind == "forced":
 		_say("마지막 한 칸이라 성냥갑을 열지 않고 바로 둬요.")
@@ -132,12 +176,14 @@ func _ai_turn(b: Array) -> void:
 	_box.title = "지금 판 모양의 성냥갑"
 	_box.show_box(b, c.beads, Menace.box_number(Ttt.canonical(b).key))
 	create_tween().tween_property(_box, "open_t", 1.0, 0.4).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	_machine.working = true
 	Sfx.open()
 	if c.kind == "resign":
 		_say("이 판 모양의 상자에 구슬이 하나도 없어요. 어떻게 둬도 질 것 같대요. AI가 기권했어요.")
+		_machine.working = false
 		later(2.6, _finish.bind(b, "kid", true))
 		return
-	_say("상자를 열었어요. 어느 칸에 구슬이 제일 많은지 보세요.")
+	_say("구슬이 많은 칸이 더 자주 나와요. 이번엔 어디가 나올까요?")
 	later(OPEN_S, _lift_bead.bind(b, c.move))
 
 
@@ -146,7 +192,11 @@ func _lift_bead(b: Array, move: Dictionary) -> void:
 	_box.picked = cell
 	_view.chosen = cell
 	create_tween().tween_property(_box, "pick_t", 1.0, LIFT_S).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	_say("구슬 하나가 나왔어요. AI는 %s에 둬요." % Ttt.CELL_NAMES[cell])
+	var line := "구슬 하나가 나왔어요. AI는 %s에 둬요." % Ttt.CELL_NAMES[cell]
+	# 제일 많은 칸이 아니면: 적은 칸도 가끔 나온다는 걸 짚어 준다 (무작위로 꺼내는 게 규칙)
+	if _box.beads.size() == 9 and _box.beads[cell] < _box.beads.max():
+		line += " 구슬이 적은 칸도 가끔 나와요. AI가 다른 수를 시험해 보는 거예요."
+	_say(line)
 	later(LIFT_S, _fly_bead.bind(b, move))
 
 
@@ -170,6 +220,7 @@ func _fly_bead(b: Array, move: Dictionary) -> void:
 
 func _place_ai(b: Array, cell: int, move: Dictionary) -> void:
 	_fly.visible = false
+	_machine.working = false
 	var nb := Ttt.place(b, cell, Ttt.AI)
 	if not move.is_empty():
 		_moves.append(move)
@@ -185,6 +236,7 @@ func _place_ai(b: Array, cell: int, move: Dictionary) -> void:
 	else:
 		phase = "kid"
 		_view.locked = false
+		_spotlight(true)
 		_say("내 차례예요. 빈칸을 눌러 ×를 둬요.")
 
 
@@ -202,6 +254,7 @@ func _kid_tap(cell: int) -> void:
 		_finish(nb, o)
 	else:
 		phase = "ai"
+		_spotlight(false)
 		_say("AI 차례예요. 지금 판 모양의 성냥갑을 찾아요.")
 		later(0.45, _ai_turn.bind(nb))
 
@@ -209,6 +262,7 @@ func _kid_tap(cell: int) -> void:
 func _finish(b: Array, o: String, resigned := false) -> void:
 	phase = "end"
 	_view.locked = true
+	_spotlight(false)
 	_view.show_line(Ttt.win_line(b))
 	Sfx.done()
 	if not resigned:
@@ -230,7 +284,7 @@ func _paint_fly(ci: Drawn) -> void:
 	Kit.bead(ci, pos, r, ci.get_meta("cell"), 1.0 - maxf(t - 0.85, 0.0) / 0.15 * 0.6)
 
 
-## 이름표 "성냥갑 AI · MENACE 1961" (결과·배우기 화면에서도 쓴다)
+## 이름표 "성냥갑 AI · MENACE 1961"
 static func paint_brand(ci: Control) -> void:
 	var R := Kit.R
 	var tw := Kit.F_TITLE.get_string_size("성냥갑 AI", HORIZONTAL_ALIGNMENT_LEFT, -1, int(R * 1.85)).x
