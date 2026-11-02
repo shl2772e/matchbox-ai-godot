@@ -28,9 +28,9 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 
-## 풍선 꼬리가 닿을 자리 (이 노드 좌표): 성냥갑 캐릭터의 머리 위
+## 풍선 꼬리가 닿을 자리 (이 노드 좌표): 톱니바퀴 오른쪽 옆
 func head() -> Vector2:
-	return Vector2(Kit.R * 3.0, Kit.R * 0.5)
+	return Vector2(Kit.R * 10.4, Kit.R * 2.5)
 
 
 func _draw() -> void:
