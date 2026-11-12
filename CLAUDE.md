@@ -45,4 +45,5 @@
 - 실행 파일 내보내기: `... --headless --path . --export-release "Windows Desktop" build/matchbox-ai.exe` → `build/matchbox-ai.exe` 하나(PCK 포함, 약 120MB)를 현장 PC에 복사하면 된다. 내보낸 실행 파일은 전체화면으로 시작한다. `tests/`·`docs/`는 빼고 넣는다(export_presets.cfg). export templates는 `%APPDATA%\Godot\export_templates\4.7.2.stable\`에 Windows x86_64 4개만 넣었다(없으면 GitHub 릴리스의 `Godot_v4.7.2-stable_export_templates.tpz`에서 꺼낸다).
 - 웹 내보내기: `... --headless --path . --export-release "Web" build/web/index.html` (스레드 없는 템플릿 `web_nothreads_*.zip`이라 서버에 특별한 헤더가 필요 없다). `build/web`을 Vercel에 정적 사이트로 올린다(`npx vercel deploy build/web --prod`). 웹에서는 전체화면·프로그램 끝내기 항목을 숨긴다.
 - 오픈그래프: 태그는 `export_presets.cfg`의 Web 프리셋 `html/head_include`에 있고(주소가 바뀌면 여기를 고친다), 공유 이미지는 `web/og.png`(1200×630, 대기 화면에서 잘라 만듦). 내보낸 뒤 `web/og.png`를 `build/web/`에 복사하고 올린다.
+- Vercel 프로젝트(`web`)는 GitHub 저장소와 연결하지 않는다(`vercel git disconnect`). 연결돼 있으면 푸시할 때마다 Godot 소스가 사이트를 덮어써 404가 된다. 사이트는 `build/web`을 직접 올릴 때만 바뀐다.
 - 저장 파일(`%APPDATA%\matchbox-ai-godot\*.json`)은 `.tmp`에 쓴 뒤 `.bak`을 남기고 바꾼다. 본 파일이 깨지면 `.bak`을 읽는다.
