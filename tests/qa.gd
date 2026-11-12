@@ -42,6 +42,11 @@ func _process(delta: float) -> void:
 		elif _shots.has("1-idle") and not _shots.has("0-teacher-done"):
 			_teacher_shots(get_parent().teacher)
 		elif _wait > 2.0 and _shots.has("1-idle"):
+			if _shots.has("9-result") and not _shots.has("attract-started"):
+				# 마지막으로 대기 화면의 소개 돌려 보기를 한 바퀴 찍는다
+				_shots["attract-started"] = true
+				get_parent()._show_attract()
+				return
 			if _shots.has("9-result"):
 				_finish()
 				return
@@ -147,7 +152,10 @@ func _teacher_shots(t: TeacherLayer) -> void:
 	elif _wait > 3.4 and not _shots.has("0-teacher-picker"):
 		t._open_picker()
 		_shot("0-teacher-picker")
-	elif _wait > 4.2 and _shots.has("0-teacher-picker"):
+	elif _wait > 4.2 and not _shots.has("0-teacher-guide"):
+		t._open_guide()
+		_shot("0-teacher-guide")
+	elif _wait > 5.0 and _shots.has("0-teacher-guide"):
 		t._close()
 		t._unlocked_until = 0
 		_shots["0-teacher-done"] = true

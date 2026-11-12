@@ -272,3 +272,14 @@ static func lock(ci: CanvasItem, rect: Rect2, open: bool, color: Color) -> void:
 	ci.draw_line(o + Vector2(8, 7) * k, o + Vector2(8, 11) * k, color, w, true)
 	if not open:
 		ci.draw_line(o + Vector2(16, 7) * k, o + Vector2(16, 11) * k, color, w, true)
+
+
+## 너비를 정했을 때 글자가 몇 줄이 되는지
+static func wrapped_lines(l: Label, width: float) -> int:
+	var ls := l.label_settings
+	var flags := TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND | TextServer.BREAK_ADAPTIVE
+	var lines := 0
+	for para in l.text.split("\n"):
+		var sz := ls.font.get_multiline_string_size(para, HORIZONTAL_ALIGNMENT_LEFT, width, ls.font_size, -1, flags)
+		lines += maxi(1, roundi(sz.y / ls.font.get_height(ls.font_size)))
+	return lines

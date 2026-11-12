@@ -54,6 +54,8 @@ const STAGE_OPEN := [
 ## 맞혀 보기에서 기다리는 시간. 지나면 그냥 넘어간다 (뜸 들이는 연출이 아니라 학생이 고를 시간)
 const PREDICT_WAIT := 4.0
 var opts := {}
+## 풍선 꼬리가 닿을 자리 (기계 좌표)
+var _tail_at := Vector2.ZERO
 var _predicted := false
 var _asked_now := false
 var _predict_tw: Tween
@@ -136,14 +138,17 @@ func relayout() -> void:
 	# 가운데: 판 + 생각 풍선(서랍) + 기계
 	var top := pad.y + head_h + R
 	var bottom := _foot.position.y - R
-	var msg_h := R * (3.4 if portrait() else 5.8)  # 가로는 세 줄까지 (적은 칸이 나왔을 때 한마디 더)
+	var msg_h := R * (3.4 if portrait() else 4.0)  # 설명은 언제나 두 줄까지 (_fit_message가 맞춘다)
 	var machine_size := Vector2(R * 10.0, R * 4.8)
 	var bubble_pad := R * 1.3
 	if portrait():
 		var bs := minf(w * 0.82, (bottom - top) * 0.45)
 		_view.position = Vector2((size.x - bs) / 2, top)
 		_view.size = Vector2(bs, bs)
+		_message.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		Kit.place(_message, Vector2(pad.x, top + bs + R * 1.2), w)
+		_bubble.tail_from_x = -1.0
+		_tail_at = _machine.head()
 		# 기계는 왼쪽 위, 풍선은 그 아래 (꼬리가 위로 올라간다)
 		var my := top + bs + R * 1.2 + msg_h + R * 0.6
 		_machine.position = Vector2(pad.x, my)
@@ -157,16 +162,23 @@ func relayout() -> void:
 		var bt := top + (bottom - top - bs - msg_h - R * 0.8) / 2
 		_view.position = Vector2(pad.x + (col - bs) / 2, bt)
 		_view.size = Vector2(bs, bs)
-		Kit.place(_message, Vector2(pad.x, bt + bs + R * 1.2), col)
-		# 풍선은 오른쪽 위, 기계는 풍선 아래 왼쪽 (꼬리가 아래로 내려간다)
+		# 풍선은 오른쪽 위, 기계는 풍선 아래 오른쪽 끝 (꼬리가 기계 왼쪽으로 내려간다).
+		# 기계를 오른쪽 끝에 두어 설명줄이 판 아래에서 꼬리 앞까지 넓게 쓴다 (두 줄에 다 들어가게)
 		var rx := pad.x + col + R * 2
 		_bubble.position = Vector2(rx, top)
 		_bubble.size = Vector2(size.x - pad.x - rx, bottom - top - machine_size.y - R * 1.2)
-		_machine.position = Vector2(rx + R * 0.6, bottom - machine_size.y)
+		_machine.position = Vector2(size.x - pad.x - machine_size.x - R * 0.4, bottom - machine_size.y)
 		_machine.size = machine_size
+		var tail_x := _machine.position.x - R * 3.6
+		_bubble.tail_from_x = tail_x - rx
+		_tail_at = Vector2(-R * 0.5, R * 2.7)
+		_message.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		var mx := _view.position.x
+		Kit.place(_message, Vector2(mx, bt + bs + R * 1.2), tail_x - R * 2.4 - mx)
+	_fit_message()
 	_box.position = _bubble.position + Vector2(bubble_pad, bubble_pad)
 	_box.size = _bubble.size - Vector2(bubble_pad, bubble_pad) * 2
-	_bubble.tail_to = _machine.position + _machine.head() - _bubble.position
+	_bubble.tail_to = _machine.position + _tail_at - _bubble.position
 	_dimmer.position = _bubble.position - Vector2(Kit.R * 1.6, Kit.R * 1.6)
 	_dimmer.size = _bubble.size + Vector2(Kit.R * 3.2, Kit.R * 3.2)
 	_fly.size = size
@@ -187,8 +199,26 @@ func enter() -> void:
 	later(2.6, _ai_turn.bind(Ttt.empty_board()))
 
 
+## 설명줄은 언제나 두 줄까지. 넘치면 글자를 조금씩 줄여 두 줄에 맞춘다 (세 줄이 되면 어색하다)
+func _fit_message() -> void:
+	var w := _message.size.x
+	if w <= 0.0:
+		return
+	var ls := _message.label_settings
+	var fs := int(Kit.R * 1.25)
+	var smallest := int(Kit.R * 0.9)
+	while true:
+		ls.font_size = fs
+		ls.line_spacing = fs * 0.3
+		if Kit.wrapped_lines(_message, w) <= 2 or fs <= smallest:
+			break
+		fs -= 1
+	_message.size.y = Kit.wrapped_height(_message, w)
+
+
 func _say(s: String) -> void:
 	Kit.set_text(_message, s)
+	_fit_message()
 	_message.modulate.a = 0.35
 	create_tween().tween_property(_message, "modulate:a", 1.0, 0.25)
 

@@ -9,6 +9,13 @@ var tail_to := Vector2.ZERO:
 		queue_redraw()
 
 
+## 꼬리의 큰 동그라미가 놓일 가로 자리 (이 노드 좌표). 0보다 작으면 풍선 가운데
+var tail_from_x := -1.0:
+	set(v):
+		tail_from_x = v
+		queue_redraw()
+
+
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 
@@ -39,7 +46,7 @@ func _draw() -> void:
 	var sizes: Array[float] = [R * 1.3, R * 0.9, R * 0.5]
 	var below := tail_to.y > inner.end.y
 	var gap: float = bump + sizes[0] + R * 0.3
-	var from := Vector2(inner.get_center().x, inner.end.y + gap if below else inner.position.y - gap)
+	var from := Vector2(tail_from_x if tail_from_x >= 0.0 else inner.get_center().x, inner.end.y + gap if below else inner.position.y - gap)
 	for k in 3:
 		var p := from.lerp(tail_to, [0.0, 0.5, 0.95][k])
 		var rad: float = sizes[k]

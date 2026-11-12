@@ -13,6 +13,8 @@ extends Control
 ## 오른쪽 위 자물쇠는 선생님 메뉴(TeacherLayer)다. 체험 기록은 Telemetry가 남긴다.
 
 const IDLE_MS := 60000
+## 대기 화면을 이만큼 그대로 두면 1961년 이야기가 저절로 넘어간다 (기다리는 학생이 본다)
+const ATTRACT_MS := 20000
 
 var brain: Dictionary
 var today: Dictionary
@@ -55,7 +57,7 @@ func _ready() -> void:
 	add_child(teacher)
 	to_idle.call_deferred()
 	# 내보낸 실행 파일은 전체화면으로 시작한다 (편집기에서 실행할 때는 창)
-	if OS.has_feature("template"):
+	if OS.has_feature("template") and not OS.has_feature("web"):
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--qa=") and ResourceLoader.exists("res://tests/qa.gd"):
@@ -125,6 +127,8 @@ func _process(_delta: float) -> void:
 		_last_touch = Time.get_ticks_msec()
 		Telemetry.end("timeout")
 		to_idle()
+	elif screen is IdleScreen and Time.get_ticks_msec() - _last_touch > ATTRACT_MS and not teacher.busy():
+		_show_attract()
 
 
 ## 새 화면으로 바꾼다. 앞 화면은 옅어지며 사라진다
@@ -146,8 +150,19 @@ func _show(s: ScreenBase) -> void:
 func to_idle() -> void:
 	# 끝까지 못 가고 돌아온 체험 (선생님이 처음으로 보냄). 이미 끝난 기록이면 아무 일도 없다
 	Telemetry.end("left")
+	_last_touch = Time.get_ticks_msec()
 	today = Today.roll(today)
 	var s := IdleScreen.new(today, settings.newflow)
+	s.start.connect(start_session)
+	_show(s)
+
+
+## 대기 화면의 소개 돌려 보기: 안내 4장이 한 장씩 넘어가고, 누르면 바로 체험을 시작한다
+func _show_attract() -> void:
+	_last_touch = Time.get_ticks_msec()
+	var s := IntroScreen.new()
+	s.attract = true
+	s.done.connect(to_idle)
 	s.start.connect(start_session)
 	_show(s)
 

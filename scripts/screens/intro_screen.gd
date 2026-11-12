@@ -42,6 +42,12 @@ const PORTRAIT_CAPTION := "도널드 미치 박사 (1923~2007)\n사진 Donald Mi
 var _page := 0
 ## 마지막 장의 단추 글자 (졸업장의 "더 알아보기"로 왔을 때는 "처음으로")
 var last_text := "한 판 두기"
+## 대기 화면의 소개 돌려 보기: 단추 없이 한 장씩 저절로 넘어가고, 화면을 누르면 start (체험 시작)
+signal start
+const ATTRACT_S := 9.0
+var attract := false
+var _tap: Label
+var _started := false
 var _card: Drawn
 var _content: Control
 var _art: Drawn
@@ -84,6 +90,12 @@ func build() -> void:
 	_next.pressed.connect(_on_next)
 	add_child(_skip)
 	add_child(_next)
+	if attract:
+		_skip.visible = false
+		_next.visible = false
+		mouse_filter = Control.MOUSE_FILTER_STOP
+		_tap = Kit.pill("화면을 누르면 시작해요", "kid", 1.5)
+		add_child(_tap)
 	_show_page()
 
 
@@ -264,6 +276,9 @@ func _place_buttons() -> void:
 	var by := size.y - pad.y - _next.size.y
 	_next.position = Vector2(size.x - pad.x - _next.size.x, by)
 	_skip.position = Vector2(_next.position.x - R * 1.2 - _skip.size.x, by + (_next.size.y - _skip.size.y) / 2)
+	if _tap:
+		_tap.size = _tap.get_combined_minimum_size()
+		_tap.position = Vector2((size.x - _tap.size.x) / 2, by + (_next.size.y - _tap.size.y) / 2)
 	var ch := _card.size.y
 	_card.position.y = maxf(pad.y, pad.y + (by - R - pad.y - ch) / 2)
 	_content.size = _card.size
@@ -278,6 +293,9 @@ func enter() -> void:
 func _process(delta: float) -> void:
 	_time += delta
 	_art.t = _time
+	if attract and _time >= ATTRACT_S:
+		_on_next()
+		return
 	if _kind() == "news" or _kind() == "album":
 		_card.t = _time
 
@@ -390,3 +408,10 @@ func _paint_art(ci: Drawn) -> void:
 				Kit.rrect(ci, rr, Color(row[2], p), R * 0.6, R * 0.11 if i == 1 else 0.0, Color(Kit.NAVY, p))
 				Kit.text(ci, Kit.F_LABEL, R * 1.5, row[0], Rect2(rr.position + Vector2(R * 1.2, 0), Vector2(rr.size.x, h)), Color(fg, p), HORIZONTAL_ALIGNMENT_LEFT)
 				Kit.text(ci, Kit.F_TITLE, R * 2.4, row[1], Rect2(rr.position, rr.size - Vector2(R * 1.2, 0)), Color(fg, p), HORIZONTAL_ALIGNMENT_RIGHT)
+
+
+func _gui_input(event: InputEvent) -> void:
+	if attract and event is InputEventMouseButton and event.pressed and not _started:
+		_started = true
+		start.emit()
+		accept_event()

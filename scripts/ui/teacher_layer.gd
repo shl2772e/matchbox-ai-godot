@@ -184,7 +184,23 @@ func _on_off(on: bool) -> String:
 
 
 func _open_menu() -> void:
-	var vbox := _card("선생님 메뉴")
+	var vbox := _card("")
+	# 제목 줄: 왼쪽에 제목, 오른쪽에 교사용 안내를 여는 동그란 i 단추
+	var head := HBoxContainer.new()
+	var title := Kit.label("선생님 메뉴", Kit.F_TITLE, Kit.R * 1.7, Kit.NAVY)
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head.add_child(title)
+	var info := Kit.button("i", "soft")
+	info.add_theme_font_override("font", Kit.F_TITLE)
+	info.custom_minimum_size = Vector2(Kit.R * 2.6, Kit.R * 2.6)
+	for state in ["normal", "hover", "pressed"]:
+		var st := Kit.box(Kit.NAVY, Kit.R * 1.3)
+		info.add_theme_stylebox_override(state, st)
+	for c in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color", "font_hover_pressed_color"]:
+		info.add_theme_color_override(c, Kit.CREAM)
+	info.pressed.connect(_open_guide)
+	head.add_child(info)
+	vbox.add_child(head)
 	var items := VBoxContainer.new()
 	items.add_theme_constant_override("separation", int(Kit.R * 0.5))
 	vbox.add_child(items)
@@ -198,10 +214,12 @@ func _open_menu() -> void:
 		_item(items, "안내 보이기: " + _on_off(settings.intro), "soft", _toggle.bind("intro", not settings.intro))
 	_item(items, "확률(%) 숫자 보이기: " + _on_off(settings.percent), "soft", _toggle.bind("percent", not settings.percent))
 	_item(items, "소리: " + _on_off(settings.sound), "soft", _toggle.bind("sound", not settings.sound))
-	_item(items, "전체화면: " + _on_off(full), "soft", _toggle_fullscreen)
+	if not OS.has_feature("web"):
+		_item(items, "전체화면: " + _on_off(full), "soft", _toggle_fullscreen)
 	_item(items, "오늘 기록 지우기", "danger", _open_confirm.bind("오늘 기록(판 수, 승·무·패)을 지울까요? AI 구슬은 그대로예요.", "지우기", clear_today.emit))
 	_item(items, "비밀번호 바꾸기", "soft", _open_password.bind("new"))
-	_item(items, "프로그램 끝내기", "danger", _open_confirm.bind("프로그램을 끝낼까요? AI 구슬과 오늘 기록은 저장되어 있어요.", "끝내기", get_tree().quit))
+	if not OS.has_feature("web"):
+		_item(items, "프로그램 끝내기", "danger", _open_confirm.bind("프로그램을 끝낼까요? AI 구슬과 오늘 기록은 저장되어 있어요.", "끝내기", get_tree().quit))
 	_ghost_close(vbox)
 	_note(vbox, "성냥갑 AI v%s · AI가 배운 판 %d" % [version, brain_games], 0.85)
 
@@ -417,3 +435,42 @@ func toast(s: String) -> void:
 	_toast_tween.tween_interval(2.3)
 	_toast_tween.tween_property(_toast, "modulate:a", 0.0, 0.3)
 	_toast_tween.tween_callback(_toast.hide)
+
+
+# ---------- 교사용 안내 (선생님 메뉴의 i 단추) ----------
+
+## [제목, 본문] 묶음. 본문의 줄바꿈은 그대로 나온다
+const GUIDE := [
+	["이 프로그램은", "1961년 영국의 도널드 미치가 성냥갑과 구슬로 만든 틱택토 기계(MENACE)를 다시 만든 체험이에요. 학생 한 명이 약 4분 동안 AI를 가르치면서 강화학습의 원리를 익혀요. 원리는 한 문장이에요. \"해 보고, 결과가 좋으면 더 하고, 나쁘면 덜 한다.\""],
+	["한 번의 흐름 (약 4분)", "1단계 새내기 AI: 아무것도 모르는 AI와 둬요. AI가 생각하지 않고 구슬을 꺼내 둔다는 것을 봐요.\n내 손으로 상과 벌: 판이 끝나면 AI가 쓴 상자를 눌러 구슬을 넣거나 빼요. 이기면 3개, 비기면 1개를 넣고, 지면 1개를 빼요.\n2단계 연습생 AI: AI가 둘 칸을 한 번 맞혀 봐요. 구슬이 많은 칸이 자주 나온다는 것을 알게 돼요.\n빨리 감기: 단추를 누르고 있으면 AI가 혼자 200판을 둬요. 조금씩 수백 번 고치면 실력이 된다는 것을 그래프로 봐요.\n3단계 졸업 시험: 강해진 AI와 둬요. 학생이 이기는 일은 다섯 번에 한 번쯤이에요.\n졸업장: 처음 상자와 지금 상자를 견주고, 한 문제를 풀어요. \"강화학습\"이라는 말은 여기서 처음 나와요."],
+	["체험 뒤에 물어볼 질문 세 가지", "1. AI는 처음부터 이기는 법을 알고 있었나요?\n2. AI가 진 다음에 그 칸의 구슬은 어떻게 됐나요? 왜 그렇게 했을까요?\n3. 졌는데도 구슬을 넣어 주면(상을 거꾸로 주면) AI는 어떻게 될까요?\n세 번째 질문은 \"AI는 사람이 준 상과 벌대로 배운다\"로 이어 가기 좋아요."],
+	["운영할 때", "한 명씩 하고, 옆에서 도와주지 않아도 끝까지 갈 수 있게 만들었어요. 막히는 곳이 보이면 적어 두었다가 알려 주세요.\n60초 동안 아무도 누르지 않으면 처음 화면으로 돌아가요. 처음 화면을 20초쯤 그대로 두면 1961년 이야기가 저절로 넘어가요. 기다리는 학생이 볼 수 있어요.\n중학생에게는 메뉴의 \"확률(%) 숫자 보이기\"를 켜 주세요. 서랍에 확률이 보이고, 졸업장에 상태·행동·보상이라는 낱말이 붙어요.\n\"놀이 방식\"을 예전 흐름으로 바꾸면 안내 4장을 읽고 여러 판을 두는 방식이 돼요."],
+	["기록", "체험 한 번마다 이름 없는 기록 한 줄이 이 컴퓨터에 남아요. 걸린 시간, 승패, 맞혀 보기와 문제의 답이 들어 있고, 이름이나 얼굴은 남기지 않아요.\n저장 위치: 이 컴퓨터의 AppData/Roaming/matchbox-ai-godot/records 폴더"],
+]
+
+
+func _open_guide() -> void:
+	var R := Kit.R
+	var vbox := _card("교사용 안내")
+	var scroll := ScrollContainer.new()
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	var room: float = _root.size.y if _root.size.y > 0.0 else 1080.0
+	scroll.custom_minimum_size = Vector2(R * 46, minf(R * 26, room - R * 13))
+	vbox.add_child(scroll)
+	var body := VBoxContainer.new()
+	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	body.add_theme_constant_override("separation", int(R * 0.5))
+	scroll.add_child(body)
+	for part in GUIDE:
+		var h := Kit.label(part[0], Kit.F_BOLD, R * 1.15, Kit.RED_INK)
+		body.add_child(h)
+		for para in part[1].split("\n"):
+			var l := _note(body, para, 1.0, Kit.INK)
+			l.custom_minimum_size.x = R * 44
+		var gap := Control.new()
+		gap.custom_minimum_size.y = R * 0.4
+		body.add_child(gap)
+	var back := Kit.button("메뉴로 돌아가기", "soft")
+	back.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	back.pressed.connect(_open_menu)
+	vbox.add_child(back)
