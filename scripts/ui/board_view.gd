@@ -8,8 +8,8 @@ signal cell_tapped(cell: int)
 ## 손가락 안내가 나오기까지 기다리는 시간 (빨리 두는 학생은 안 본다)
 const HINT_DELAY := 1.0
 const HINT_CYCLE := 2.0
-## 안내 손가락이 가리킬 빈칸 고르는 순서 (가운데부터)
-const HINT_ORDER := [4, 1, 3, 5, 7, 0, 2, 6, 8]
+## 안내 손가락이 돌아다니는 순서 (가운데에서 시작해 멀리 떨어진 칸으로)
+const HINT_ORDER := [4, 0, 8, 2, 6, 1, 7, 3, 5]
 
 var board: Array = Ttt.empty_board()
 var locked := true
@@ -151,16 +151,24 @@ func _draw() -> void:
 		var col := Color(Kit.RED if board[_line[0]] == Ttt.AI else Kit.NAVY, 0.55)
 		draw_line(a, a.lerp(b, _line_t), col, s * 0.028, true)
 	if active and _active_t > HINT_DELAY:
-		var hint := _hint_cell()
-		if hint >= 0:
-			_draw_hand(cell_rect(hint).get_center(), cell_rect(0).size.x, fmod(_active_t - HINT_DELAY, HINT_CYCLE))
+		# 빈칸마다 옅은 ×가 숨 쉰다: "빈칸이면 어디든 둘 수 있어요" (한 칸만 누르라는 뜻으로 보이지 않게)
+		var empties := _hint_cells()
+		for k in empties.size():
+			var a := 0.13 + 0.07 * sin(_active_t * TAU / 1.8 - k * 0.9)
+			_ghost_x(cell_rect(empties[k]).get_center(), cell_rect(0).size.x * 0.8, a)
+		# 손가락은 두드릴 때마다 다른 빈칸으로 옮겨 간다
+		if not empties.is_empty():
+			var n := int((_active_t - HINT_DELAY) / HINT_CYCLE)
+			_draw_hand(cell_rect(empties[n % empties.size()]).get_center(), cell_rect(0).size.x, fmod(_active_t - HINT_DELAY, HINT_CYCLE))
 
 
-func _hint_cell() -> int:
+## 손가락이 돌아다닐 빈칸들 (가운데에서 시작해 멀리 떨어진 칸으로 건너뛰는 순서)
+func _hint_cells() -> Array:
+	var out := []
 	for i in HINT_ORDER:
 		if board[i] == 0:
-			return i
-	return -1
+			out.append(i)
+	return out
 
 
 ## 손가락이 칸을 톡 두드린다. t는 한 주기(초) 안의 시간: 내려감 → 닿음(물결) → 올라감 → 쉼
@@ -172,21 +180,23 @@ func _draw_hand(c: Vector2, cs: float, t: float) -> void:
 		down = 1.0
 	elif t < 1.2:
 		down = 1.0 - (t - 0.85) / 0.35
+	# 옮겨 갈 때는 옅어졌다가 새 칸에서 다시 나타난다
+	var fade := clampf(minf(t / 0.2, (HINT_CYCLE - t) / 0.3), 0.0, 1.0)
 	if t >= 0.35 and t < 0.95:
 		var q := (t - 0.35) / 0.6
 		draw_arc(c, cs * (0.1 + 0.3 * q), 0, TAU, 40, Color(Kit.MUSTARD, 1.0 - q), cs * 0.025, true)
 	var tip := c + Vector2(cs * 0.04, cs * 0.06) - Vector2(0, (1.0 - down) * cs * 0.28)
 	var u := cs * 0.11
 	draw_set_transform(tip, deg_to_rad(-18.0), Vector2.ONE)
-	# 집게손가락 (끝이 칸 가운데) + 쥔 손
-	_capsule(Vector2.ZERO, Vector2(0, 3.2 * u), 1.3 * u, Kit.INK)
-	_capsule(Vector2.ZERO, Vector2(0, 3.2 * u), 1.0 * u, Kit.CREAM)
-	var palm := Rect2(Vector2(-0.65 * u, 2.4 * u), Vector2(3.6 * u, 3.1 * u))
-	Kit.rrect(self, palm, Kit.INK, 1.1 * u)
-	Kit.rrect(self, palm.grow(-0.15 * u), Kit.CREAM, 1.0 * u)
-	for i in 3:
-		var x := (0.95 + i * 0.85) * u
-		draw_line(Vector2(x, 2.55 * u), Vector2(x, 3.4 * u), Kit.INK, 0.15 * u, true)
+	# 먹색 바깥선을 먼저 그리고 그 위를 크림색으로 덮어 한 덩어리 손으로 보이게 한다.
+	# 손가락 사이에 선을 긋지 않는다 (집게손가락 + 엄지 + 둥근 주먹)
+	var palm := Rect2(Vector2(-0.75 * u, 2.5 * u), Vector2(3.2 * u, 2.9 * u))
+	for layer in 2:
+		var grow := 0.0 if layer == 1 else 0.32 * u
+		var col := Color(Kit.CREAM if layer == 1 else Kit.INK, fade)
+		_capsule(Vector2.ZERO, Vector2(0, 3.0 * u), 1.0 * u + grow, col)
+		_capsule(Vector2(-0.9 * u, 3.9 * u), Vector2(-1.6 * u, 3.1 * u), 0.85 * u + grow, col)
+		Kit.rrect(self, palm.grow(grow / 2), col, 1.1 * u)
 	draw_set_transform(Vector2.ZERO)
 
 
@@ -194,3 +204,15 @@ func _capsule(a: Vector2, b: Vector2, w: float, color: Color) -> void:
 	draw_line(a, b, color, w, true)
 	draw_circle(a, w / 2, color, true, -1.0, true)
 	draw_circle(b, w / 2, color, true, -1.0, true)
+
+
+## 옅은 × (빈칸 안내). 겹쳐서 얼룩지지 않게 선 두 개만 긋는다
+func _ghost_x(c: Vector2, cell_size: float, alpha: float) -> void:
+	var d := cell_size * 0.208
+	var w := cell_size * 0.0946
+	var col := Color(Kit.NAVY, alpha)
+	draw_line(c + Vector2(-d, -d), c + Vector2(d, d), col, w, true)
+	# 둘째 획은 가운데 겹치는 곳을 비우고 양쪽으로 나눠 긋는다
+	var g := w / (d * 2.0 * sqrt(2.0))
+	draw_line(c + Vector2(d, -d), c + Vector2(d, -d).lerp(Vector2(-d, d), 0.5 - g * 0.5), col, w, true)
+	draw_line(c + Vector2(d, -d).lerp(Vector2(-d, d), 0.5 + g * 0.5), c + Vector2(-d, d), col, w, true)

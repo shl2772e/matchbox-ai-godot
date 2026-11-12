@@ -66,7 +66,7 @@ func _process(delta: float) -> void:
 		if s.phase == "kid" and _wait > 0.6:
 			if not _shots.has(name + "-kid"):
 				_shot(name + "-kid")
-			elif _wait < 3.4:
+			elif s._view._active_t < 1.6:
 				pass  # 손가락 안내가 나올 때까지 기다린다
 			elif not _shots.has(name + "-hint"):
 				_shot(name + "-hint")
