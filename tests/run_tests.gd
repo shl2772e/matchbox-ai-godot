@@ -86,6 +86,29 @@ func _init() -> void:
 	check([t.games, t.kid, t.ai, t.draw] == [2, 1, 1, 0], "오늘 기록 더하기")
 	check(Today.roll(t, "2026-10-29").games == 0, "날짜 바뀌면 새로")
 
+	# 새 흐름: 오늘 선생님·졸업 수, 난이도 시뮬레이션, 체험 기록
+	t = Today.add_teacher(t, "2026-10-28")
+	t = Today.add_grad(t, "2026-10-28")
+	check(t.teachers == 1 and t.grads == 1 and t.games == 2, "오늘 선생님·졸업")
+	check(Today.from_json({"date": "2026-10-28", "games": 3}).teachers == 0, "옛 오늘 기록 읽기")
+	var ev := SelfPlay.evaluate(Menace.new_brain(), 0.7, 200, SeededRng.new(3))
+	check(ev.kid + ev.draw + ev.ai == 200, "시뮬레이션 판 수")
+	var fresh_kid: int = ev.kid
+	var trained_ai := Menace.new_brain()
+	var tr := SeededRng.new(5)
+	for i in SelfPlay.TRAIN_GAMES:
+		SelfPlay.play_one(trained_ai, SelfPlay.TRAIN_OPPONENT, tr)
+	ev = SelfPlay.evaluate(trained_ai, 0.7, 200, SeededRng.new(3))
+	check(ev.kid < fresh_kid, "빨리 감기 뒤에는 학생이 덜 이김 (%d → %d)" % [fresh_kid, ev.kid])
+	Telemetry.enabled = false
+	Telemetry.begin({"flow": "new"})
+	Telemetry.stage("play1")
+	Telemetry.tap()
+	Telemetry.add_round({"stage": 1, "outcome": "kid"})
+	check(Telemetry.active(), "기록 시작")
+	Telemetry.end("grad")
+	check(not Telemetry.active(), "기록 끝")
+
 	# 저장: 임시 파일 → .bak → 본 파일. 본 파일이 깨지면 .bak을 읽는다
 	var path := "user://test-store.json"
 	for suffix in ["", ".bak", ".tmp"]:

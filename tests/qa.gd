@@ -9,6 +9,8 @@ var _wait := 0.0
 var _brain_backup: Dictionary
 var _today_backup: Dictionary
 var _last_screen: Node
+var _last_phase := ""
+var _pt := 0.0
 
 
 func _ready() -> void:
@@ -28,6 +30,8 @@ func _shot(name: String) -> void:
 
 func _process(delta: float) -> void:
 	_wait += delta
+	# 점검 중에는 누르는 입력이 없으므로 60초 대기 시계가 돌지 않게 한다
+	get_parent()._last_touch = Time.get_ticks_msec()
 	var s: Node = get_parent().screen
 	if s != _last_screen:
 		_last_screen = s
@@ -67,6 +71,46 @@ func _process(delta: float) -> void:
 				s._kid_tap(empties[randi() % empties.size()])
 		if s.phase == "end":
 			_shot(name + "-end")
+		# 새 흐름: 맞혀 보기(서랍의 빈칸 하나를 누른다)와 내 손으로 상벌 주기(상자를 모두 누른다)
+		if s.phase != _last_phase:
+			_last_phase = s.phase
+			_pt = 0.0
+		_pt += delta
+		if s.phase == "predict" and _pt > 1.0:
+			if not _shots.has(name + "-predict"):
+				_shot(name + "-predict")
+			elif _pt > 1.4:
+				s._box.slot_tapped.emit(Ttt.empty_cells(s._box.shape)[0])
+		if s.phase == "teach" and s._teach != null:
+			if _pt > 1.0 and not _shots.has(name + "-teach"):
+				_shot(name + "-teach")
+			elif _pt > 1.5 and not _shots.has(name + "-applied"):
+				_shots[name + "-applied"] = true
+				for i in s._teach.changes.size():
+					s._teach._apply(i, true)
+			elif _pt > 2.9:
+				_shot(name + "-taught")
+	elif s is TrainScreen:
+		if _wait > 1.2 and not _shots.has("5-train-start"):
+			_shot("5-train-start")
+			s._on_down()
+		elif s._played > SelfPlay.TRAIN_GAMES / 2 and not _shots.has("5-train-half"):
+			_shot("5-train-half")
+		elif s._finished and not _shots.has("5-train-done"):
+			_wait = 0.0
+			_shot("5-train-done")
+		elif s._finished and _wait > 1.5:
+			_wait = 0.0
+			s._go()
+	elif s is GradScreen:
+		if _wait > 1.6 and not _shots.has("8-grad"):
+			_shot("8-grad")
+			s._answer("down", s._quiz_buttons[1])
+		elif _wait > 2.6 and _shots.has("8-grad"):
+			_shot("9-result")
+			if _wait > 3.0:
+				_wait = 0.0
+				s._leave(s.home)
 	elif s is LearnScreen:
 		if _wait > 2.8:
 			_shot("4-learn-%d" % get_parent().round_i)

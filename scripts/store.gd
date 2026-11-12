@@ -10,7 +10,8 @@ const BRAIN := "user://brain.json"
 const TODAY := "user://today.json"
 const SETTINGS := "user://settings.json"
 
-const DEFAULT_SETTINGS := {"rounds": 3, "intro": true, "percent": false, "sound": true}
+## newflow: 새 흐름 "AI 졸업시키기"(3단계 고정). 끄면 예전 흐름(안내 4장 → 판 수만큼 → 결과)
+const DEFAULT_SETTINGS := {"rounds": 3, "intro": true, "percent": false, "sound": true, "newflow": true}
 
 
 ## 파일 하나를 읽어 JSON으로 푼다. 없거나 깨졌으면 null
@@ -30,8 +31,14 @@ static func read_safe(path: String) -> Variant:
 	return data
 
 
+## 화면 점검(--qa) 때는 true: 저장을 하지 않는다 (점검이 중간에 꺼져도 두뇌와 오늘 기록이 그대로 남게)
+static var frozen := false
+
+
 ## 임시 파일에 쓴 뒤 .bak을 남기고 본 파일로 바꾼다. 성공하면 true
 static func write_safe(path: String, data: Variant) -> bool:
+	if frozen:
+		return true
 	var tmp := path + ".tmp"
 	var f := FileAccess.open(tmp, FileAccess.WRITE)
 	if f == null:

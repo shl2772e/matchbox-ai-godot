@@ -191,8 +191,11 @@ func _open_menu() -> void:
 	var full := DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
 	_item(items, "처음 화면으로", "soft", _run.bind(go_home.emit))
 	_item(items, "AI 고르기 (처음부터 · 조금 · 많이 배운 AI)", "primary", _open_picker)
-	_item(items, "한 번에 둘 판 수: %d판" % settings.rounds, "soft", _toggle.bind("rounds", settings.rounds % 5 + 1))
-	_item(items, "안내 보이기: " + _on_off(settings.intro), "soft", _toggle.bind("intro", not settings.intro))
+	# 새 흐름(AI 졸업시키기)은 3단계 고정이고 안내 4장이 없다. 판 수와 안내는 예전 흐름에서만 쓴다
+	_item(items, "놀이 방식: " + ("AI 졸업시키기 (새 흐름)" if settings.newflow else "예전 흐름 (안내 → 판 → 결과)"), "soft", _toggle.bind("newflow", not settings.newflow))
+	if not settings.newflow:
+		_item(items, "한 번에 둘 판 수: %d판" % settings.rounds, "soft", _toggle.bind("rounds", settings.rounds % 5 + 1))
+		_item(items, "안내 보이기: " + _on_off(settings.intro), "soft", _toggle.bind("intro", not settings.intro))
 	_item(items, "확률(%) 숫자 보이기: " + _on_off(settings.percent), "soft", _toggle.bind("percent", not settings.percent))
 	_item(items, "소리: " + _on_off(settings.sound), "soft", _toggle.bind("sound", not settings.sound))
 	_item(items, "전체화면: " + _on_off(full), "soft", _toggle_fullscreen)

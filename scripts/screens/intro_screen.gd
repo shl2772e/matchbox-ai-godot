@@ -40,6 +40,8 @@ const PHOTO_PORTRAIT := preload("res://assets/photos/michie-2003.jpg")
 const PORTRAIT_CAPTION := "도널드 미치 박사 (1923~2007)\n사진 Donald Michie · CC BY 4.0"
 
 var _page := 0
+## 마지막 장의 단추 글자 (졸업장의 "더 알아보기"로 왔을 때는 "처음으로")
+var last_text := "한 판 두기"
 var _card: Drawn
 var _content: Control
 var _art: Drawn
@@ -115,7 +117,7 @@ func _show_page() -> void:
 	Kit.set_text(_caption, p.get("caption", ""))
 	_caption.visible = p.has("caption")
 	_cap2.visible = _kind() == "news"
-	_next.text = "한 판 두기" if _page == PAGES.size() - 1 else "다음"
+	_next.text = last_text if _page == PAGES.size() - 1 else "다음"
 	# 신문·앨범은 사진이 주인공이라 본문이 조금 작다. 앨범의 caption은 출처 한 줄
 	var news := _kind() == "news"
 	var album := _kind() == "album"

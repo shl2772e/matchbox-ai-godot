@@ -11,7 +11,21 @@ static func date_key(d: Dictionary = Time.get_date_dict_from_system()) -> String
 
 
 static func fresh(date := date_key()) -> Dictionary:
-	return {"date": date, "games": 0, "kid": 0, "draw": 0, "ai": 0, "recent": []}
+	return {"date": date, "games": 0, "kid": 0, "draw": 0, "ai": 0, "recent": [], "teachers": 0, "grads": 0}
+
+
+## 오늘 선생님(체험을 시작한 학생) 한 명 더
+static func add_teacher(t: Dictionary, date := date_key()) -> Dictionary:
+	var cur := roll(t, date).duplicate(true)
+	cur.teachers += 1
+	return cur
+
+
+## AI가 졸업 시험에 붙은 횟수 하나 더
+static func add_grad(t: Dictionary, date := date_key()) -> Dictionary:
+	var cur := roll(t, date).duplicate(true)
+	cur.grads += 1
+	return cur
 
 
 static func roll(t: Dictionary, date := date_key()) -> Dictionary:
@@ -32,7 +46,7 @@ static func from_json(data: Variant) -> Dictionary:
 	if typeof(data) != TYPE_DICTIONARY or not data.has("date"):
 		return fresh()
 	var t := fresh(str(data.date))
-	for k in ["games", "kid", "draw", "ai"]:
+	for k in ["games", "kid", "draw", "ai", "teachers", "grads"]:
 		t[k] = int(data.get(k, 0))
 	t.recent = Array(data.get("recent", []))
 	return t

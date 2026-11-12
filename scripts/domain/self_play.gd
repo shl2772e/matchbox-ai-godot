@@ -4,6 +4,9 @@ extends RefCounted
 ## 상대는 "random" / "careful" / "mixed".
 
 const LEVELS := {"fresh": 0, "some": 300, "lots": 3000}
+## 빨리 감기(새 흐름): 새내기 AI가 혼자 두는 판 수와 연습 상대. tests/sim_difficulty.gd 로 정했다 (졸업 시험 학생 승률 20~25%)
+const TRAIN_GAMES := 200
+const TRAIN_OPPONENT := "careful"
 const LEVEL_NAMES := {"fresh": "처음부터 (아무것도 모르는 AI)", "some": "조금 배운 AI (300판 연습)", "lots": "많이 배운 AI (3000판 연습)"}
 
 
@@ -71,3 +74,29 @@ static func trained_brain(level: String, seed := 1961) -> Dictionary:
 		play_one(brain, "mixed", rng)
 	brain.games = 0
 	return brain
+
+
+## 실력을 정할 수 있는 학생: p의 확률로 꼼꼼하게(이기거나 막기), 아니면 아무 데나 둔다
+static func skilled_kid(b: Array, rng: SeededRng, p: float) -> int:
+	return careful_kid(b, rng) if rng.next() < p else random_kid(b, rng)
+
+
+## AI와 실력 p인 학생이 배우지 않고 n판을 둔 결과 {"kid", "draw", "ai"} (난이도 시뮬레이션)
+static func evaluate(brain: Dictionary, p: float, n: int, rng: SeededRng) -> Dictionary:
+	var out := {"kid": 0, "draw": 0, "ai": 0}
+	for i in n:
+		var work := Menace.clone_brain(brain)
+		var b := Ttt.empty_board()
+		var o := ""
+		while o == "":
+			var c := Menace.choose_move(work, b, rng)
+			if c.kind == "resign":
+				o = "kid"
+				break
+			b = Ttt.place(b, c.move.cell if c.kind == "move" else c.cell, Ttt.AI)
+			o = Ttt.outcome(b)
+			if o == "":
+				b = Ttt.place(b, skilled_kid(b, rng, p), Ttt.KID)
+				o = Ttt.outcome(b)
+		out[o] += 1
+	return out

@@ -13,8 +13,13 @@ var _time := 0.0
 var _started := false
 
 
-func _init(t: Dictionary) -> void:
+## 새 흐름이면 오늘 기록을 "선생님 몇 명, AI 졸업 몇 번"으로 보여 준다 (다음 친구가 이어받는 우리 반 기록)
+var newflow := false
+
+
+func _init(t: Dictionary, new_flow := false) -> void:
 	today = t
+	newflow = new_flow
 
 
 func build() -> void:
@@ -109,6 +114,13 @@ func _paint_today(ci: Drawn) -> void:
 		["AI 승", str(today.ai), Kit.RED_INK, Kit.RED_INK],
 	]
 	var widths := [11.0, 6.5, 5.5, 6.0]
+	if newflow:
+		items = [
+			["오늘 선생님", "%d명" % today.get("teachers", 0), Kit.INK, Kit.NAVY],
+			["우리 AI 졸업", "%d번" % today.get("grads", 0), Kit.INK, Kit.RED_INK],
+			["함께 가르친 판", str(today.games), Kit.INK, Kit.RED_INK],
+		]
+		widths = [9.5, 10.5, 10.0]
 	var x := R * 1.2
 	for i in items.size():
 		var it: Array = items[i]

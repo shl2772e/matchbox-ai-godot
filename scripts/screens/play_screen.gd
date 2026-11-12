@@ -43,20 +43,44 @@ var _machine: MachineView
 var _foot: Drawn
 var _fly: Drawn
 
+## 새 흐름 "AI 졸업시키기" (opts.newflow). 단계마다 하는 일이 다르다:
+## 1단계 새내기(보기) → 2단계 연습생(맞혀 보기) → 3단계 졸업 시험(도전). 판이 끝나면 내 손으로 상과 벌을 준다.
+const STAGES := ["1단계 · 새내기 AI", "2단계 · 연습생 AI", "3단계 · 졸업 시험"]
+const STAGE_OPEN := [
+	"AI: 틱택토는 처음이에요. 상자에서 구슬을 꺼내서 둘게요.",
+	"2단계예요. 이번에는 AI가 둘 칸을 한 번 맞혀 봐요.",
+	"졸업 시험이에요. 혼자 %d판을 연습한 AI예요. 이길 수 있을까요?",
+]
+## 맞혀 보기에서 기다리는 시간. 지나면 그냥 넘어간다 (뜸 들이는 연출이 아니라 학생이 고를 시간)
+const PREDICT_WAIT := 4.0
+var opts := {}
+var _predicted := false
+var _asked_now := false
+var _predict_tw: Tween
+var _predict := {"offered": false, "answered": false, "guess_max": false, "hit": false}
+var _teach: TeachPanel
+var _teach_info := {"manual": 0, "total": 0}
+var _end := {}
 
-func _init(b: Dictionary, r: int, total: int, s: Dictionary, games: int, show_percent: bool) -> void:
+
+func _init(b: Dictionary, r: int, total: int, s: Dictionary, games: int, show_percent: bool, options := {}) -> void:
 	brain = b
 	round_i = r
 	rounds = total
 	score = s
 	today_games = games
 	percent = show_percent
+	opts = options
+
+
+func _newflow() -> bool:
+	return opts.get("newflow", false)
 
 
 func build() -> void:
 	_brand = Drawn.new(paint_brand)
 	add_child(_brand)
-	_round = Kit.label("%d판째 / %d판" % [round_i, rounds], Kit.F_LABEL, Kit.R * 1.3)
+	_round = Kit.label(STAGES[round_i - 1] if _newflow() else "%d판째 / %d판" % [round_i, rounds], Kit.F_LABEL, Kit.R * 1.3)
 	add_child(_round)
 	for p in [["나 %d" % score.kid, "kid"], ["비김 %d" % score.draw, "draw"], ["AI %d" % score.ai, "ai"]]:
 		var l := Kit.pill(p[0], p[1])
@@ -146,10 +170,21 @@ func relayout() -> void:
 	_dimmer.position = _bubble.position - Vector2(Kit.R * 1.6, Kit.R * 1.6)
 	_dimmer.size = _bubble.size + Vector2(Kit.R * 3.2, Kit.R * 3.2)
 	_fly.size = size
+	_place_teach()
 
 
 func enter() -> void:
-	later(0.5, _ai_turn.bind(Ttt.empty_board()))
+	if not _newflow():
+		later(0.5, _ai_turn.bind(Ttt.empty_board()))
+		return
+	# 단계를 여는 한마디를 읽을 시간을 주고 시작한다
+	var line: String = STAGE_OPEN[round_i - 1]
+	if round_i == 3:
+		line = line % opts.get("trained", 0)
+	_say(line)
+	_machine.mood = "lost" if round_i == 1 else "calm"
+	_box.wait_text = "AI가 곧 상자를 열어요."
+	later(2.6, _ai_turn.bind(Ttt.empty_board()))
 
 
 func _say(s: String) -> void:
@@ -174,17 +209,69 @@ func _ai_turn(b: Array) -> void:
 		later(0.7, _place_ai.bind(b, c.cell, {}))
 		return
 	_box.title = "지금 판 모양의 성냥갑"
+	_box.wait_text = "내 차례예요. 빈칸을 눌러 ×를 둬요."
 	_box.show_box(b, c.beads, Menace.box_number(Ttt.canonical(b).key))
 	create_tween().tween_property(_box, "open_t", 1.0, 0.4).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	_machine.working = true
+	if _machine.mood != "lost":
+		_machine.mood = "think"
 	Sfx.open()
+	Sfx.slide()
 	if c.kind == "resign":
 		_say("이 판 모양의 상자에 구슬이 하나도 없어요. 어떻게 둬도 질 것 같대요. AI가 기권했어요.")
 		_machine.working = false
+		_machine.mood = "resign"
 		later(2.6, _finish.bind(b, "kid", true))
 		return
-	_say("구슬이 많은 칸이 더 자주 나와요. 이번엔 어디가 나올까요?")
+	if _should_predict(c.beads):
+		_predicted = true
+		later(OPEN_S, _ask_predict.bind(b, c.move))
+		return
+	if not (_newflow() and round_i == 1 and _moves.is_empty()):
+		_say("구슬이 많은 칸이 더 자주 나와요. 이번엔 어디가 나올까요?")
 	later(OPEN_S, _lift_bead.bind(b, c.move))
+
+
+## 맞혀 보기는 한 판에 한 번. 칸마다 구슬 수가 다른 상자에서 묻는다 (다 같으면 읽을 것이 없다).
+## 첫 상자가 고르면 둘째 상자에서 묻는다
+func _should_predict(beads: Array) -> bool:
+	if not opts.get("predict", false) or _predicted:
+		return false
+	var lo := 999
+	var hi := 0
+	for i in 9:
+		if _box.shape[i] == 0:
+			lo = mini(lo, beads[i])
+			hi = maxi(hi, beads[i])
+	return hi > lo or not _moves.is_empty()
+
+
+func _ask_predict(b: Array, move: Dictionary) -> void:
+	phase = "predict"
+	_predict.offered = true
+	_say("어디가 나올까요? 서랍에서 한 칸을 눌러 맞혀 봐요.")
+	_asked_now = true
+	_box.pickable = true
+	_box.slot_tapped.connect(_on_guess.bind(b, move))
+	_predict_tw = create_tween()
+	_predict_tw.tween_interval(PREDICT_WAIT)
+	_predict_tw.tween_callback(_on_guess.bind(-1, b, move))
+
+
+func _on_guess(cell: int, b: Array, move: Dictionary) -> void:
+	if phase != "predict":
+		return
+	phase = "ai"
+	if _predict_tw:
+		_predict_tw.kill()
+	_box.pickable = false
+	if cell >= 0:
+		Sfx.tap()
+		_box.guess = cell
+		_predict.answered = true
+		_predict.guess_max = _box.beads[cell] == _box.beads.max()
+		_predict.hit = cell == move.cell
+	_lift_bead(b, move)
 
 
 func _lift_bead(b: Array, move: Dictionary) -> void:
@@ -193,6 +280,18 @@ func _lift_bead(b: Array, move: Dictionary) -> void:
 	_view.chosen = cell
 	create_tween().tween_property(_box, "pick_t", 1.0, LIFT_S).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	var line := "구슬 하나가 나왔어요. AI는 %s에 둬요." % Ttt.CELL_NAMES[cell]
+	var guessed := _box.guess >= 0
+	if _asked_now:
+		_asked_now = false
+		# 맞혀 본 차례: 맞고 틀림을 크게 알리지 않고 구슬 수만 말한다
+		var total := 0
+		for n in _box.beads:
+			total += n
+		line = "구슬 %d개 가운데 %d개가 있던 %s 칸이 나왔어요." % [total, _box.beads[cell], Ttt.CELL_NAMES[cell]]
+		if guessed and _box.guess == cell:
+			line += " 내가 고른 칸이에요."
+		elif guessed:
+			line += " 내가 고른 칸에는 %d개가 있었어요." % _box.beads[_box.guess]
 	# 제일 많은 칸이 아니면: 적은 칸도 가끔 나온다는 걸 짚어 준다 (무작위로 꺼내는 게 규칙)
 	if _box.beads.size() == 9 and _box.beads[cell] < _box.beads.max():
 		line += " 구슬이 적은 칸도 가끔 나와요. AI가 다른 수를 시험해 보는 거예요."
@@ -221,6 +320,8 @@ func _fly_bead(b: Array, move: Dictionary) -> void:
 func _place_ai(b: Array, cell: int, move: Dictionary) -> void:
 	_fly.visible = false
 	_machine.working = false
+	if _machine.mood == "think":
+		_machine.mood = "calm"
 	var nb := Ttt.place(b, cell, Ttt.AI)
 	if not move.is_empty():
 		_moves.append(move)
@@ -267,7 +368,57 @@ func _finish(b: Array, o: String, resigned := false) -> void:
 	Sfx.done()
 	if not resigned:
 		_say({"kid": "내가 이겼어요. AI가 지는 수를 배울 차례예요.", "ai": "AI가 이겼어요. 이 수를 더 좋아하게 돼요.", "draw": "비겼어요. 비기는 것도 AI에겐 작은 상이에요."}[o])
-	later(END_S, round_end.emit.bind({"outcome": o, "moves": _moves, "resigned": resigned}))
+		_machine.mood = {"kid": "sad", "ai": "happy", "draw": "calm"}[o]
+	_end = {"outcome": o, "moves": _moves, "resigned": resigned, "predict": _predict, "teach": _teach_info}
+	if opts.get("teach", false) and not _moves.is_empty():
+		later(END_S, _start_teach)
+	else:
+		later(END_S, round_end.emit.bind(_end))
+
+
+# ---------- 내 손으로 상과 벌 주기 ----------
+
+const TEACH_ASK := {
+	"kid": "AI가 졌어요. AI가 쓴 상자를 눌러 구슬을 1개씩 빼요. 이게 벌이에요.",
+	"ai": "AI가 이겼어요. AI가 쓴 상자를 눌러 구슬을 3개씩 넣어요. 이게 상이에요.",
+	"draw": "비겼어요. AI가 쓴 상자를 눌러 구슬을 1개씩 넣어요. 작은 상이에요.",
+}
+const TEACH_DONE := {
+	"kid": "이제 이 칸들은 조금 덜 나와요. 내가 AI에게 \"그 수는 안 돼\"를 가르쳤어요.",
+	"ai": "이제 이 칸들은 더 자주 나와요. 내가 AI에게 \"그 수는 좋아\"를 가르쳤어요.",
+	"draw": "이제 이 칸들은 조금 더 나와요. 지지 않는 것도 AI에겐 배울 거리예요.",
+}
+
+
+## 판이 끝난 자리에서 바로: 풍선(서랍)이 물러나고, 이번 판에 연 상자들이 줄지어 선다
+func _start_teach() -> void:
+	phase = "teach"
+	# 실제 두뇌는 main이 round_end에서 바꾼다. 여기서는 복사본으로 바뀔 수만 미리 알아낸다
+	var changes := Menace.learn(Menace.clone_brain(brain), _moves, _end.outcome)
+	_say(TEACH_ASK[_end.outcome] + (" 한 판에 쓴 상자가 모두 함께 바뀌어요." if round_i >= 2 and changes.size() > 1 else ""))
+	_teach = TeachPanel.new(changes, _end.outcome)
+	_teach.finished.connect(_on_taught)
+	_teach.modulate.a = 0.0
+	add_child(_teach)
+	_place_teach()
+	var tw := create_tween().set_parallel()
+	tw.tween_property(_mind, "modulate:a", 0.0, 0.3)
+	tw.tween_property(_dimmer, "color:a", 0.0, 0.3)
+	tw.tween_property(_teach, "modulate:a", 1.0, 0.35).set_delay(0.15)
+
+
+func _place_teach() -> void:
+	if _teach:
+		_teach.position = _bubble.position
+		_teach.size = _bubble.size
+
+
+func _on_taught(manual: int, total: int) -> void:
+	_teach_info.manual = manual
+	_teach_info.total = total
+	_say(TEACH_DONE[_end.outcome])
+	Sfx.learn()
+	later(2.2, round_end.emit.bind(_end))
 
 
 func _paint_fly(ci: Drawn) -> void:
@@ -310,7 +461,7 @@ func _paint_foot(ci: Drawn) -> void:
 	var h := r.size.y
 	var fs := R * 1.05
 	var x := R * 1.0
-	var a := "오늘 AI가 배운 판"
+	var a := "오늘 함께 가르친 판" if _newflow() else "오늘 AI가 배운 판"
 	Kit.text(ci, Kit.F_LABEL, fs, a, Rect2(x, 0, R * 20, h), Kit.INK, HORIZONTAL_ALIGNMENT_LEFT)
 	x += Kit.F_LABEL.get_string_size(a, HORIZONTAL_ALIGNMENT_LEFT, -1, int(fs)).x + R * 0.4
 	Kit.text(ci, Kit.F_LABEL, R * 1.35, str(today_games), Rect2(x, 0, R * 5, h), Kit.RED_INK, HORIZONTAL_ALIGNMENT_LEFT)

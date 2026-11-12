@@ -15,6 +15,20 @@ var picked := -1
 ## 고른 구슬이 서랍을 떠났는지 (날아가는 구슬은 놀이 화면이 그린다)
 var bead_out := false
 
+## 맞혀 보기: pickable이면 빈칸을 눌러 "어디가 나올까"를 고를 수 있다. guess는 고른 칸
+signal slot_tapped(cell: int)
+var pickable := false:
+	set(v):
+		pickable = v
+		mouse_filter = Control.MOUSE_FILTER_STOP if v else Control.MOUSE_FILTER_IGNORE
+		set_process(v)
+		queue_redraw()
+var guess := -1:
+	set(v):
+		guess = v
+		queue_redraw()
+var _pick_time := 0.0
+
 var open_t := 0.0:
 	set(v):
 		open_t = v
@@ -28,12 +42,28 @@ var pick_t := 0.0:
 func _ready() -> void:
 	clip_contents = true
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	set_process(false)
+
+
+func _process(delta: float) -> void:
+	_pick_time += delta
+	queue_redraw()
+
+
+func _gui_input(event: InputEvent) -> void:
+	if pickable and event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+		for i in 9:
+			if shape[i] == 0 and _slot_rect(i).has_point(event.position):
+				slot_tapped.emit(i)
+				break
+		accept_event()
 
 
 func show_box(board_shape: Array, box_beads: Array, number: int) -> void:
 	shape = board_shape.duplicate()
 	beads = box_beads.duplicate()
 	box_no = number
+	guess = -1
 	picked = -1
 	pick_t = 0.0
 	bead_out = false
@@ -136,6 +166,15 @@ func _draw() -> void:
 			if full:
 				Kit.text(self, Kit.F_BODY, R * 0.95, "찼어요", sr, Color(Kit.INK_SOFT, a))
 				continue
+			# 맞혀 보기: 누를 수 있는 칸은 테두리가 숨 쉬고, 내가 고른 칸은 남색 테두리와 "내 생각" 표가 붙는다
+			if pickable:
+				var pulse := 0.45 + 0.35 * sin(_pick_time * TAU / 1.4)
+				Kit.rrect(self, sr, Color.TRANSPARENT, R * 0.45, R * 0.16, Color(Kit.NAVY, pulse * a))
+			if i == guess:
+				Kit.rrect(self, sr, Color.TRANSPARENT, R * 0.45, R * 0.2, Color(Kit.NAVY, a))
+				var tag := Rect2(sr.position + Vector2(R * 0.3, R * 0.25), Vector2(R * 3.6, R * 1.15))
+				Kit.rrect(self, tag, Color(Kit.NAVY, a), R * 0.5)
+				Kit.text(self, Kit.F_LABEL, R * 0.8, "내 생각", tag, Color(Kit.CREAM, a))
 			var n := mini(beads[i], MAX_BEADS)
 			for k in n:
 				var lifted := i == picked and k == n - 1
