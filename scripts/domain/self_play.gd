@@ -4,8 +4,8 @@ extends RefCounted
 ## 상대는 "random" / "careful" / "mixed".
 
 const LEVELS := {"fresh": 0, "some": 300, "lots": 3000}
-## 빨리 감기(새 흐름): 새내기 AI가 혼자 두는 판 수와 연습 상대. tests/sim_difficulty.gd 로 정했다 (졸업 시험 학생 승률 20~25%)
-const TRAIN_GAMES := 200
+## 빨리 감기(새 흐름): 새내기 AI가 혼자 두는 판 수와 연습 상대. tests/sim_difficulty.gd 로 정했다 (300판이면 졸업 시험 학생 승률 15~20%, 200판은 21~24%, 500판은 8~15%)
+const TRAIN_GAMES := 300
 const TRAIN_OPPONENT := "careful"
 const LEVEL_NAMES := {"fresh": "처음부터 (아무것도 모르는 AI)", "some": "조금 배운 AI (300판 연습)", "lots": "많이 배운 AI (3000판 연습)"}
 
