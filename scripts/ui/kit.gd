@@ -283,3 +283,12 @@ static func wrapped_lines(l: Label, width: float) -> int:
 		var sz := ls.font.get_multiline_string_size(para, HORIZONTAL_ALIGNMENT_LEFT, width, ls.font_size, -1, flags)
 		lines += maxi(1, roundi(sz.y / ls.font.get_height(ls.font_size)))
 	return lines
+
+
+## 제목·이름표 글꼴(Black Han Sans, Do Hyeon)에는 가운뎃점(·)과 빼기표(−)가 없다.
+## Windows에서는 시스템 글꼴이 대신 그려 주지만 웹에는 대신할 글꼴이 없어 네모(글자 번호)가 나온다.
+## 그래서 없는 글자는 본문 글꼴(Gowun Batang)로 그리게 한다. 프로그램을 시작할 때 한 번 부른다
+static func setup_fonts() -> void:
+	var spare: Array[Font] = [F_BOLD]
+	for f: FontFile in [F_TITLE, F_LABEL]:
+		f.fallbacks = spare

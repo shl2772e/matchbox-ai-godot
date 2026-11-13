@@ -34,6 +34,7 @@ var _vignette: TextureRect
 
 
 func _ready() -> void:
+	Kit.setup_fonts()
 	settings = Store.load_settings()
 	Sfx.enabled = settings.sound
 	brain = Store.load_brain()
