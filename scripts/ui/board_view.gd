@@ -124,6 +124,8 @@ func _draw() -> void:
 		Kit.rrect(self, Rect2(Vector2.ZERO, Vector2(s, s)).grow(s * 0.006), Color.TRANSPARENT, s * 0.04, s * 0.013, Color(Kit.MUSTARD, glow))
 	var pad := _pad()
 	Kit.rrect(self, Rect2(Vector2(pad, pad), Vector2(s - pad * 2, s - pad * 2)), Kit.NAVY, s * 0.015)
+	if match_t > 0.0:
+		Kit.rrect(self, Rect2(Vector2(pad, pad), Vector2(s - pad * 2, s - pad * 2)).grow(s * 0.012), Color.TRANSPARENT, s * 0.025, s * 0.012, Color(Kit.MUSTARD, match_t))
 	for i in 9:
 		var r := cell_rect(i)
 		var bg := Kit.CREAM
@@ -216,3 +218,15 @@ func _ghost_x(c: Vector2, cell_size: float, alpha: float) -> void:
 	var g := w / (d * 2.0 * sqrt(2.0))
 	draw_line(c + Vector2(d, -d), c + Vector2(d, -d).lerp(Vector2(-d, d), 0.5 - g * 0.5), col, w, true)
 	draw_line(c + Vector2(d, -d).lerp(Vector2(-d, d), 0.5 + g * 0.5), c + Vector2(-d, d), col, w, true)
+
+## "판과 같은 모양" 표시: 판과 성냥갑 상표의 작은 판에 같은 겨자색 테두리가 잠깐 켜졌다 꺼진다
+var match_t := 0.0:
+	set(v):
+		match_t = v
+		queue_redraw()
+
+
+func flash_match() -> void:
+	match_t = 1.0
+	create_tween().tween_property(self, "match_t", 0.0, 0.7).set_delay(0.45)
+

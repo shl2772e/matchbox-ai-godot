@@ -47,7 +47,7 @@ var _fly: Drawn
 ## 1단계 새내기(보기) → 2단계 연습생(맞혀 보기) → 3단계 졸업 시험(도전). 판이 끝나면 내 손으로 상과 벌을 준다.
 const STAGES := ["1단계 · 새내기 AI", "2단계 · 연습생 AI", "3단계 · 졸업 시험"]
 const STAGE_OPEN := [
-	"AI: 틱택토는 처음이에요. 상자에서 구슬을 꺼내서 둘게요.",
+	"AI는 틱택토가 처음이에요. 판과 같은 모양의 성냥갑을 찾아 구슬을 꺼내요.",
 	"2단계예요. 이번에는 AI가 둘 칸을 한 번 맞혀 봐요.",
 	"졸업 시험이에요. 혼자 %d판을 연습한 AI예요. 이길 수 있을까요?",
 ]
@@ -196,7 +196,7 @@ func enter() -> void:
 	_say(line)
 	_machine.mood = "lost" if round_i == 1 else "calm"
 	_box.wait_text = "AI가 곧 상자를 열어요."
-	later(2.6, _ai_turn.bind(Ttt.empty_board()))
+	later(0.9 if round_i == 1 else 1.8, _ai_turn.bind(Ttt.empty_board()))
 
 
 ## 설명줄은 언제나 두 줄까지. 넘치면 글자를 조금씩 줄여 두 줄에 맞춘다 (세 줄이 되면 어색하다)
@@ -241,6 +241,9 @@ func _ai_turn(b: Array) -> void:
 	_box.title = "지금 판 모양의 성냥갑"
 	_box.wait_text = "내 차례예요. 빈칸을 눌러 ×를 둬요."
 	_box.show_box(b, c.beads, Menace.box_number(Ttt.canonical(b).key))
+	# 판과 상표의 작은 판에 같은 테두리가 함께 켜진다: "판과 같은 모양의 성냥갑"
+	_box.flash_match()
+	_view.flash_match()
 	create_tween().tween_property(_box, "open_t", 1.0, 0.4).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	_machine.working = true
 	if _machine.mood != "lost":
@@ -325,7 +328,9 @@ func _lift_bead(b: Array, move: Dictionary) -> void:
 	# 제일 많은 칸이 아니면: 적은 칸도 가끔 나온다는 걸 짚어 준다 (무작위로 꺼내는 게 규칙)
 	if _box.beads.size() == 9 and _box.beads[cell] < _box.beads.max():
 		line += " 구슬이 적은 칸도 가끔 나와요. AI가 다른 수를 시험해 보는 거예요."
-	_say(line)
+	# 1단계 첫 수에서는 여는 한마디를 그대로 둔다 (금방 지나가므로 말을 바꾸지 않는다)
+	if not (_newflow() and round_i == 1 and _moves.is_empty()):
+		_say(line)
 	later(LIFT_S, _fly_bead.bind(b, move))
 
 
@@ -368,7 +373,10 @@ func _place_ai(b: Array, cell: int, move: Dictionary) -> void:
 		phase = "kid"
 		_view.locked = false
 		_spotlight(true)
-		_say("내 차례예요. 빈칸을 눌러 ×를 둬요.")
+		if _newflow() and round_i == 1 and _moves.size() == 1:
+			_say("AI가 판과 같은 모양의 성냥갑에서 구슬을 꺼내 뒀어요. 이제 내 차례예요. 빈칸을 눌러 ×를 둬요.")
+		else:
+			_say("내 차례예요. 빈칸을 눌러 ×를 둬요.")
 
 
 func _kid_tap(cell: int) -> void:

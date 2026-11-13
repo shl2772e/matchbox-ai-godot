@@ -212,6 +212,20 @@ func _draw() -> void:
 	draw_line(Vector2(lw, lid), Vector2(w, lid), Kit.KRAFT_DARK, 2.0)
 	var mb := lid - R * 1.1
 	Kit.mini_board(self, Rect2(R * 0.55, (lid - mb) / 2, mb, mb), shape)
+	if match_t > 0.0:
+		Kit.rrect(self, Rect2(R * 0.55, (lid - mb) / 2, mb, mb).grow(R * 0.22), Color.TRANSPARENT, R * 0.4, R * 0.2, Color(Kit.MUSTARD, match_t))
 	var tx := R * 0.55 + mb + R * 0.7
 	Kit.text(self, Kit.F_LABEL, R * 0.95, "BOX No. %d" % box_no if box_no > 0 else "BOX", Rect2(tx, lid * 0.5 - R * 1.55, lw - tx, R * 1.2), Kit.MUSTARD, HORIZONTAL_ALIGNMENT_LEFT)
 	Kit.text(self, Kit.F_TITLE, R * 1.35, title if open_t > 0.5 else "성냥갑은 쉬는 중", Rect2(tx, lid * 0.5 - R * 0.35, lw - tx, R * 1.6), Kit.CREAM, HORIZONTAL_ALIGNMENT_LEFT)
+
+## "판과 같은 모양" 표시: 판과 성냥갑 상표의 작은 판에 같은 겨자색 테두리가 잠깐 켜졌다 꺼진다
+var match_t := 0.0:
+	set(v):
+		match_t = v
+		queue_redraw()
+
+
+func flash_match() -> void:
+	match_t = 1.0
+	create_tween().tween_property(self, "match_t", 0.0, 0.7).set_delay(0.45)
+
