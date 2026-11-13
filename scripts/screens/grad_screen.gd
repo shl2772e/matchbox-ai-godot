@@ -77,8 +77,11 @@ func build() -> void:
 	var R := Kit.R
 	_title = Kit.label("AI 졸업장", Kit.F_TITLE, R * 2.2, Kit.NAVY, HORIZONTAL_ALIGNMENT_CENTER)
 	add_child(_title)
-	var passed := exam != "kid"
-	var sub := "AI가 졸업 시험에 붙었어요. " if passed else "AI가 졸업 시험에서 졌어요. 그래도 지는 수를 하나 더 배웠어요. "
+	var sub := "AI가 졸업 시험에서 이겼어요. 내가 잘 가르쳤어요. "
+	if exam == "draw":
+		sub = "졸업 시험에서 AI와 비겼어요. 아주 잘한 거예요. "
+	elif exam == "kid":
+		sub = "졸업 시험에서 AI를 이겼어요. 정말 대단해요. "
 	_sub = Kit.label(sub + "나는 \"%s\"이에요." % nickname(), Kit.F_BODY, R * 1.3, Kit.INK, HORIZONTAL_ALIGNMENT_CENTER, true)
 	add_child(_sub)
 	for p in [["나 %d" % score.kid, "kid"], ["비김 %d" % score.draw, "draw"], ["AI %d" % score.ai, "ai"]]:

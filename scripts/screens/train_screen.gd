@@ -4,8 +4,8 @@ extends ScreenBase
 ## 3판으로는 보이지 않는 "조금씩 수백 번 고치면 실력이 된다"를 눈앞에서 보여 준다.
 ## 왼쪽: 10판씩 묶은 막대(이긴 판·비긴 판·진 판). 오른쪽: 첫 상자의 구슬이 바뀌는 모습과 기계.
 ##
-## 판 수와 연습 상대는 tests/sim_difficulty.gd 로 정했다: 꼼꼼한 상대와 300판이면
-## 졸업 시험에서 학생이 이기는 비율이 15~20%쯤 된다 (처음 목표는 20~40%였지만, 연습 뒤 차이가 더 느껴지게 판 수를 200에서 300으로 늘렸다).
+## 판 수와 연습 상대는 tests/sim_difficulty.gd 로 정했다 (SelfPlay.TRAIN_GAMES, TRAIN_OPPONENT):
+## 잘 두는 상대·대충 두는 상대와 섞어 1500판을 두면 졸업 시험에서 학생이 거의 못 이긴다 (비기기가 목표가 된다).
 ## 화면에 보이는 판 수만큼 실제로 둔다 (보이는 것과 다르게 몰래 더 두지 않는다).
 
 signal done(info: Dictionary)
@@ -13,7 +13,7 @@ signal done(info: Dictionary)
 const GAMES := SelfPlay.TRAIN_GAMES
 const OPPONENT := SelfPlay.TRAIN_OPPONENT
 ## 누르고 있으면 다 두는 데 걸리는 시간
-const HOLD_S := 8.0
+const HOLD_S := 10.0
 ## 이만큼 손대지 않으면 저절로 돈다
 const AUTO_S := 6.0
 const BUCKETS := 20
@@ -51,6 +51,8 @@ func _init(b: Dictionary) -> void:
 
 
 func build() -> void:
+	# 가장 잘 두는 상대의 수읽기를 미리 해 둔다 (첫 판에서 멈칫하지 않게)
+	SelfPlay.perfect_kid(Ttt.place(Ttt.empty_board(), 4, Ttt.AI), _rng)
 	var R := Kit.R
 	_brand = Drawn.new(PlayScreen.paint_brand)
 	add_child(_brand)
