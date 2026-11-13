@@ -61,8 +61,19 @@ static func box(color: Color, radius: float, border := 0.0, border_color := Colo
 	return s
 
 
+## 같은 모양의 상자는 한 번만 만들어 두고 다시 쓴다 (장면마다 수십 개씩 새로 만들면 느리다)
+static var _box_cache := {}
+
+
 static func rrect(ci: CanvasItem, rect: Rect2, color: Color, radius: float, border := 0.0, border_color := Color.TRANSPARENT) -> void:
-	ci.draw_style_box(box(color, radius, border, border_color), rect)
+	var key := [color, radius, border, border_color]
+	var sb: StyleBoxFlat = _box_cache.get(key)
+	if sb == null:
+		if _box_cache.size() > 800:
+			_box_cache.clear()
+		sb = box(color, radius, border, border_color)
+		_box_cache[key] = sb
+	ci.draw_style_box(sb, rect)
 
 
 ## 구슬 하나. 둥근 빛을 겹쳐 그려 유리구슬처럼 보이게 한다

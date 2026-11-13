@@ -32,6 +32,7 @@ var _armed := false
 var _gone := false
 var _buckets: Array = []
 var _time := 0.0
+var _shown := -1
 
 var _brand: Drawn
 var _stage: Label
@@ -154,8 +155,11 @@ func _go() -> void:
 
 func _process(delta: float) -> void:
 	_time += delta
-	_graph.t = _time
-	_box.t = _time
+	# 판 수가 바뀔 때만 그래프와 상자를 다시 그린다
+	if _played != _shown:
+		_shown = _played
+		_graph.queue_redraw()
+		_box.queue_redraw()
 	if _finished:
 		return
 	var running := _holding or _auto

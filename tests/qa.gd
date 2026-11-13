@@ -11,6 +11,10 @@ var _today_backup: Dictionary
 var _last_screen: Node
 var _last_phase := ""
 var _pt := 0.0
+## 성능 재기: 10초마다 평균 장면 수와 한 장면에 그린 도형 수를 찍는다 (--disable-vsync 로 돌리면 화면 주사율에 안 묶인다)
+var _perf_t := 0.0
+var _perf_n := 0
+var _perf_prims := 0.0
 
 
 func _ready() -> void:
@@ -30,6 +34,14 @@ func _shot(name: String) -> void:
 
 func _process(delta: float) -> void:
 	_wait += delta
+	_perf_t += delta
+	_perf_n += 1
+	_perf_prims += Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME)
+	if _perf_t >= 10.0:
+		print("PERF 평균 %d장면/초, 장면마다 도형 %d개, 화면 %s" % [roundi(_perf_n / _perf_t), roundi(_perf_prims / _perf_n), get_parent().screen.get_script().get_global_name()])
+		_perf_t = 0.0
+		_perf_n = 0
+		_perf_prims = 0.0
 	# 점검 중에는 누르는 입력이 없으므로 60초 대기 시계가 돌지 않게 한다
 	get_parent()._last_touch = Time.get_ticks_msec()
 	var s: Node = get_parent().screen

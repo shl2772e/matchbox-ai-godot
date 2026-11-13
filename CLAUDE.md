@@ -25,6 +25,7 @@
 - `scripts/screens/` 화면. 위치는 `relayout()`에서 직접 계산하고, 세로 화면(`portrait()`)이면 배치만 바꾼다.
 - 새 흐름 화면: `play_screen.gd`(opts.newflow면 단계 이름·여는 한마디·맞혀 보기·상벌 주기), `train_screen.gd`(빨리 감기), `grad_screen.gd`(졸업장: 칭호, 처음·지금 첫 상자, 강화학습 한마디, 한 문제). 확률 표시를 켜면(중등) 졸업장에 상태·행동·보상 낱말이 붙는다.
 - `scripts/main.gd` 화면 흐름. `scripts/sfx.gd`(자동 로드 `Sfx`) 소리를 코드로 만든다. `scripts/telemetry.gd` 체험 기록.
+- 성능: 장면마다 그리는 도형 수를 줄인다. 바탕 점무늬는 작은 그림 한 장을 깔아 그리고(`main._make_dots`, 점을 하나씩 그리면 장면마다 30만 도형이 된다), 둥근 상자는 `Kit.rrect`가 만들어 둔 것을 다시 쓰고, 움직이지 않는 부품은 `_process`에서 `queue_redraw()`를 부르지 않는다. 재는 법: 화면 점검에 `--disable-vsync`를 붙이면 10초마다 `PERF` 줄(장면/초, 도형 수)이 찍힌다.
 - 화면 기준 1920×1080, stretch `canvas_items` + `expand`. 렌더러는 GL Compatibility(현장 PC 호환).
 
 ## 규칙

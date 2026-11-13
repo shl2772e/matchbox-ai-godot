@@ -24,6 +24,7 @@ var _angle := 0.0
 var _speed := 0.0
 var _mood_t := 0.0
 var _time := 0.0
+var _was_blink := false
 
 
 func _ready() -> void:
@@ -36,7 +37,12 @@ func _process(delta: float) -> void:
 	var target := 1.0 if working else 0.0
 	_speed = move_toward(_speed, target, delta * (3.0 if working else 1.5))
 	_angle += delta * TAU * 0.3 * _speed
-	queue_redraw()
+	# 움직이는 것이 있을 때만 다시 그린다 (가만히 있을 때는 눈을 깜빡이는 순간만)
+	var blink := fmod(_time, 3.6) > 3.45
+	var moving := working or _speed > 0.0 or mood == "lost" or mood == "resign" or (mood == "happy" and _mood_t < 1.7) or (mood == "sad" and _mood_t < 0.5)
+	if moving or blink != _was_blink:
+		queue_redraw()
+	_was_blink = blink
 
 
 ## 풍선 꼬리가 닿을 자리 (이 노드 좌표): 톱니바퀴 오른쪽 옆

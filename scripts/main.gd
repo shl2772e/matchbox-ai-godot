@@ -31,6 +31,7 @@ var trained := 0
 var _flow_new := false
 var _last_touch := 0
 var _vignette: TextureRect
+var _dots: ImageTexture
 
 
 func _ready() -> void:
@@ -100,17 +101,31 @@ func _on_resized() -> void:
 			c.size = size
 
 
+## 점무늬 한 장 (점 5×5개). 점 수천 개를 장면마다 하나씩 그리면 느려서, 작은 그림 한 장을 바둑판처럼 깔아 그린다
+func _make_dots() -> ImageTexture:
+	var step := Kit.R * 0.8
+	var n := 5
+	var side := roundi(step * n)
+	var img := Image.create(side, side, false, Image.FORMAT_RGBA8)
+	img.fill(Color(Kit.PAPER_DOT, 0.0))
+	for j in n:
+		for i in n:
+			var c := Vector2(step * (i + 0.5), step * (j + 0.5))
+			for y in range(int(c.y) - 3, int(c.y) + 4):
+				for x in range(int(c.x) - 3, int(c.x) + 4):
+					var cover := clampf(1.9 - Vector2(x + 0.5, y + 0.5).distance_to(c), 0.0, 1.0)
+					if cover > 0.0:
+						img.set_pixel(x, y, Color(Kit.PAPER_DOT, Kit.PAPER_DOT.a * cover))
+	return ImageTexture.create_from_image(img)
+
+
 ## 누런 종이 바탕 + 점무늬
 func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO, size), Kit.PAPER)
-	var step := Kit.R * 0.8
-	var y := step / 2
-	while y < size.y:
-		var x := step / 2
-		while x < size.x:
-			draw_circle(Vector2(x, y), 1.4, Kit.PAPER_DOT)
-			x += step
-		y += step
+	if _dots == null:
+		_dots = _make_dots()
+		texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
+	draw_texture_rect(_dots, Rect2(Vector2.ZERO, size), true)
 
 
 func _input(event: InputEvent) -> void:
