@@ -261,7 +261,10 @@ func _ai_turn(b: Array) -> void:
 		later(OPEN_S, _ask_predict.bind(b, c.move))
 		return
 	if not (_newflow() and round_i == 1 and _moves.is_empty()):
-		_say("구슬이 많은 칸이 더 자주 나와요. 이번엔 어디가 나올까요?")
+		if not _newflow():
+			_say("구슬이 많은 칸이 더 자주 나와요. 이번엔 어디가 나올까요?")
+		else:
+			_say("AI는 눈을 감고 상자에서 구슬 하나를 꺼내요. 구슬이 많은 칸이 더 잘 나와요.")
 	later(OPEN_S, _lift_bead.bind(b, c.move))
 
 
@@ -373,8 +376,13 @@ func _place_ai(b: Array, cell: int, move: Dictionary) -> void:
 		phase = "kid"
 		_view.locked = false
 		_spotlight(true)
+		# 1단계의 내 차례 문구는 학생이 둘 때까지 남아 있으므로, 여기서 한 가지씩 쉬운 말로 설명한다
 		if _newflow() and round_i == 1 and _moves.size() == 1:
 			_say("AI가 판과 같은 모양의 성냥갑에서 구슬을 꺼내 뒀어요. 이제 내 차례예요. 빈칸을 눌러 ×를 둬요.")
+		elif _newflow() and round_i == 1 and _moves.size() == 2:
+			_say("AI는 눈을 감고 구슬 하나를 꺼내요. 그래서 구슬이 많은 칸이 더 잘 나와요.")
+		elif _newflow() and round_i == 1 and _moves.size() == 3:
+			_say("사탕 주머니에 딸기 맛이 많으면 딸기 맛이 잘 나오죠? 구슬도 똑같아요.")
 		else:
 			_say("내 차례예요. 빈칸을 눌러 ×를 둬요.")
 

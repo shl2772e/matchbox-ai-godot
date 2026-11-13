@@ -76,6 +76,8 @@ func _process(delta: float) -> void:
 		if s._fly.visible:
 			_shot(name + "-fly")
 		if s.phase == "kid" and _wait > 0.6:
+			if s._moves.size() == 2 and not _shots.has(name + "-kid2") and s._view._active_t > 0.8:
+				_shot(name + "-kid2")
 			if not _shots.has(name + "-kid"):
 				_shot(name + "-kid")
 			elif s._view._active_t < 1.6:

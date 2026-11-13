@@ -145,7 +145,7 @@ func _draw() -> void:
 		var a := clampf(open_t * 1.6, 0.0, 1.0)
 		var inner := Rect2(R * 0.6, lid + R * 0.55 + R * 0.3 + dy, w - R * 1.2, size.y - lid - R * 1.35)
 		Kit.rrect(self, inner, Color(Kit.KRAFT_DARK, 0.55 * a), R * 0.6)
-		Kit.text(self, Kit.F_LABEL, R * 1.05, "구슬이 많을수록 AI가 좋아하는 칸", Rect2(R * 1.25, lid + R * 1.15 + dy, w, R * 1.3), Color(Kit.INK_SOFT, a), HORIZONTAL_ALIGNMENT_LEFT)
+		Kit.text(self, Kit.F_LABEL, R * 1.05, "눈을 감고 하나 꺼내요. 구슬이 많은 칸이 잘 나와요", Rect2(R * 1.25, lid + R * 1.15 + dy, w, R * 1.3), Color(Kit.INK_SOFT, a), HORIZONTAL_ALIGNMENT_LEFT)
 		var total := 0
 		for n in beads:
 			total += n
