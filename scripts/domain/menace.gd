@@ -94,7 +94,8 @@ static func _sum(a: Array) -> int:
 
 ## AI가 둘 칸을 고른다. kind는 "move" / "forced" / "resign".
 ## move = {key, canon, cell, board}
-static func choose_move(brain: Dictionary, b: Array, rng: SeededRng) -> Dictionary:
+## greedy면 구슬이 가장 많은 칸을 고른다 (학생과 둘 때). 아니면 구슬 수에 비례해 아무거나 하나 (혼자 연습할 때: 여러 수를 시험해 본다)
+static func choose_move(brain: Dictionary, b: Array, rng: SeededRng, greedy := false) -> Dictionary:
 	var empties := Ttt.empty_cells(b)
 	if empties.size() == 1:
 		return {"kind": "forced", "cell": empties[0]}
@@ -109,7 +110,17 @@ static func choose_move(brain: Dictionary, b: Array, rng: SeededRng) -> Dictiona
 		return {"kind": "resign", "beads": shown}
 	var r := rng.next() * total
 	var canon := -1
-	for i in 9:
+	if greedy:
+		# 학생과 둘 때: 구슬이 가장 많은 칸을 고른다 (여럿이면 그 가운데 아무거나)
+		var top := 0
+		for n in box.beads:
+			top = maxi(top, n)
+		var tops := []
+		for i in 9:
+			if box.beads[i] == top:
+				tops.append(i)
+		canon = tops[floori(r / total * tops.size()) % tops.size()]
+	for i in (9 if canon < 0 else 0):
 		r -= box.beads[i]
 		if r < 0:
 			canon = i

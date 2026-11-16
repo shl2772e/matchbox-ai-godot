@@ -109,6 +109,42 @@ func _process(delta: float) -> void:
 					s._teach._apply(i, true)
 			elif _pt > 2.9:
 				_shot(name + "-taught")
+	elif s is GameScreen:
+		var name := "3-game-s%d-g%d" % [s.set_i, s.game_i]
+		if s.phase != _last_phase:
+			_last_phase = s.phase
+			_pt = 0.0
+		_pt += delta
+		if s._view.pick_t > 0.6 and s._view.beads_a > 0.9:
+			_shot(name + "-pick")
+		if s.phase == "kid":
+			# 묶음의 첫 판에서는 손가락 안내가 뜬 장면을 찍고, 그 뒤로는 바로 둔다
+			var hold := 1.7 if s.game_i == 1 and not _shots.has(name + "-kid") else 0.5
+			if s._view._active_t > hold:
+				if s.game_i == 1:
+					_shot(name + "-kid")
+				var empties := Ttt.empty_cells(s._board)
+				s._kid_tap(empties[randi() % empties.size()])
+		if s.phase == "predict" and _pt > 1.0:
+			if not _shots.has(name + "-predict"):
+				_shot(name + "-predict")
+			elif _pt > 1.4:
+				s._on_guess_tap(Ttt.empty_cells(s._board)[0])
+		if s.phase == "teach":
+			if _pt > 0.9 and not _shots.has(name + "-teach"):
+				_shot(name + "-teach")
+			elif _pt > 1.3 and s.set_i == 2 and not _shots.has(name + "-applied"):
+				_shots[name + "-applied"] = true
+				for k in s._view._teach.size():
+					s._view._teach_apply(k, true)
+			elif _pt > 2.7:
+				_shot(name + "-taught")
+	elif s is ExplainScreen:
+		if _wait > 2.4:
+			_shot("4-explain-" + s.kind)
+			if _wait > 2.8:
+				_wait = 0.0
+				s._go()
 	elif s is TrainScreen:
 		if _wait > 1.2 and not _shots.has("5-train-start"):
 			_shot("5-train-start")

@@ -56,11 +56,11 @@ static func kid_move(opp: String, b: Array, rng: SeededRng) -> int:
 
 
 ## AI와 상대가 한 판을 둔다. learn_it이면 배운다
-static func play_one(brain: Dictionary, opp: String, rng: SeededRng, learn_it := true) -> String:
+static func play_one(brain: Dictionary, opp: String, rng: SeededRng, learn_it := true, greedy := false) -> String:
 	var b := Ttt.empty_board()
 	var moves := []
 	while true:
-		var c := Menace.choose_move(brain, b, rng)
+		var c := Menace.choose_move(brain, b, rng, greedy)
 		if c.kind == "resign":
 			if learn_it:
 				Menace.learn(brain, moves, "kid")
@@ -95,14 +95,14 @@ static func skilled_kid(b: Array, rng: SeededRng, p: float) -> int:
 
 
 ## AI와 실력 p인 학생이 배우지 않고 n판을 둔 결과 {"kid", "draw", "ai"} (난이도 시뮬레이션)
-static func evaluate(brain: Dictionary, p: float, n: int, rng: SeededRng) -> Dictionary:
+static func evaluate(brain: Dictionary, p: float, n: int, rng: SeededRng, greedy := true) -> Dictionary:
 	var out := {"kid": 0, "draw": 0, "ai": 0}
 	for i in n:
 		var work := Menace.clone_brain(brain)
 		var b := Ttt.empty_board()
 		var o := ""
 		while o == "":
-			var c := Menace.choose_move(work, b, rng)
+			var c := Menace.choose_move(work, b, rng, greedy)
 			if c.kind == "resign":
 				o = "kid"
 				break

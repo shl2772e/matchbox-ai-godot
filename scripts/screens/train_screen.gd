@@ -60,7 +60,7 @@ func build() -> void:
 	add_child(_stage)
 	_title = Kit.label("AI가 혼자 연습해요", Kit.F_TITLE, R * 2.4, Kit.NAVY, HORIZONTAL_ALIGNMENT_CENTER)
 	add_child(_title)
-	_line = Kit.label("단추를 누르고 있으면 AI가 혼자 둬요. 한 판이 끝날 때마다 스스로 상과 벌을 받아요.", Kit.F_BODY, R * 1.3, Kit.INK, HORIZONTAL_ALIGNMENT_CENTER, true)
+	_line = Kit.label("단추를 누르고 있으면 AI가 혼자 연습해요. 연습할 때는 구슬을 아무거나 집어서 여러 수를 시험해 봐요.", Kit.F_BODY, R * 1.3, Kit.INK, HORIZONTAL_ALIGNMENT_CENTER, true)
 	add_child(_line)
 	_graph = Drawn.new(_paint_graph)
 	add_child(_graph)
@@ -256,7 +256,7 @@ func _paint_graph(ci: Drawn) -> void:
 				y -= h
 	Kit.text(ci, Kit.F_LABEL, R * 0.95, "처음", Rect2(area.position.x, area.end.y + R * 0.3, R * 4, R * 1.2), Kit.INK_SOFT, HORIZONTAL_ALIGNMENT_LEFT)
 	Kit.text(ci, Kit.F_LABEL, R * 0.95, "나중", Rect2(area.end.x - R * 4, area.end.y + R * 0.3, R * 4, R * 1.2), Kit.INK_SOFT, HORIZONTAL_ALIGNMENT_RIGHT)
-	Kit.text(ci, Kit.F_BODY, R * 1.05, "막대 하나가 %d판이에요. 남색(진 판)이 줄어드는지 보세요." % per, Rect2(0, r.size.y - R * 2.0, r.size.x, R * 1.5), Kit.INK_SOFT)
+	Kit.text(ci, Kit.F_BODY, R * 1.05, "남색(진 판)이 줄어드는지 보세요", Rect2(0, r.size.y - R * 2.0, r.size.x, R * 1.5), Kit.INK_SOFT)
 
 
 ## 첫 상자(빈 판에서 여는 상자)의 칸별 구슬 수

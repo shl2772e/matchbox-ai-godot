@@ -49,11 +49,11 @@ func _init(s: Dictionary, beads: Array, exam_outcome: String, trained_games: int
 
 ## 내가 준 상과 벌로 정하는 칭호
 func nickname() -> String:
-	if score.kid >= 2:
+	if score.kid >= 4:
 		return "엄한 선생님"
-	if score.ai >= 2:
+	if score.ai >= 4:
 		return "칭찬 많은 선생님"
-	if score.draw >= 2:
+	if score.draw >= 4:
 		return "끈기 있는 선생님"
 	return "골고루 가르친 선생님"
 
@@ -77,11 +77,11 @@ func build() -> void:
 	var R := Kit.R
 	_title = Kit.label("AI 졸업장", Kit.F_TITLE, R * 2.2, Kit.NAVY, HORIZONTAL_ALIGNMENT_CENTER)
 	add_child(_title)
-	var sub := "AI가 졸업 시험에서 이겼어요. 내가 잘 가르쳤어요. "
+	var sub := "졸업 시험에서 AI가 더 많이 이겼어요. 내가 잘 가르쳤어요. "
 	if exam == "draw":
 		sub = "졸업 시험에서 AI와 비겼어요. 아주 잘한 거예요. "
 	elif exam == "kid":
-		sub = "졸업 시험에서 AI를 이겼어요. 정말 대단해요. "
+		sub = "졸업 시험에서 내가 더 많이 이겼어요. 정말 대단해요. "
 	_sub = Kit.label(sub + "나는 \"%s\"이에요." % nickname(), Kit.F_BODY, R * 1.3, Kit.INK, HORIZONTAL_ALIGNMENT_CENTER, true)
 	add_child(_sub)
 	for p in [["나 %d" % score.kid, "kid"], ["비김 %d" % score.draw, "draw"], ["AI %d" % score.ai, "ai"]]:
@@ -102,7 +102,7 @@ func build() -> void:
 	var lines := [
 		["이게 강화학습이에요", Kit.F_TITLE, 1.6, Kit.MUSTARD],
 		["AI는 정답을 배운 게 아니에요. 해 보고, 결과가 좋으면 더 하고, 나쁘면 덜 해요.", Kit.F_BODY, 1.2, Kit.CREAM],
-		["요즘 게임 AI도 구슬 대신 숫자로 똑같이 배워요. 그래서 상을 잘못 주면 AI도 잘못 배워요.", Kit.F_BODY, 1.2, Kit.CREAM],
+		["요즘 게임 AI도 구슬 대신 숫자로 똑같이 배워요.", Kit.F_BODY, 1.2, Kit.CREAM],
 	]
 	if percent:
 		lines.append(["판 모양은 \"상태\", 둔 칸은 \"행동\", 구슬로 주는 상과 벌은 \"보상\"이라고 불러요.", Kit.F_BODY, 1.1, Kit.CREAM])
@@ -126,9 +126,6 @@ func build() -> void:
 	_quiz_a = Kit.label("", Kit.F_BODY, R * 1.2, Kit.TEAL, HORIZONTAL_ALIGNMENT_CENTER, true)
 	_quiz_a.visible = false
 	_quiz.add_child(_quiz_a)
-	var hint := Kit.label("다음에는 일부러 져 볼까요? 그러면 AI는 무엇을 배울까요?", Kit.F_BODY, R * 1.1, Kit.MUSTARD, HORIZONTAL_ALIGNMENT_LEFT, true)
-	_right.add_child(hint)
-	_right_items.append(hint)
 	_again = Kit.button("한 번 더 하기", "soft", true)
 	_again.pressed.connect(_leave.bind(again))
 	add_child(_again)
@@ -183,7 +180,7 @@ func relayout() -> void:
 	var gap := R * 1.2
 	var cw := w if vertical else (w - gap) / 2
 	# 상자 그림은 자리가 되는 만큼 크게 (세로 화면은 더 크게)
-	_bs = minf(R * (12.0 if vertical else 9.0), (cw - R * 5.0) / 2)
+	_bs = minf(R * (12.0 if vertical else 8.0), (cw - R * 5.0) / 2)
 	var box_h := _bs
 	var left_h := R * 1.0 + box_h + R * 0.7 + Kit.wrapped_height(_left_line, cw - R * 2.4) + R * 1.0
 	var ry := R * 1.2

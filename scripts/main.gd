@@ -2,8 +2,11 @@ extends Control
 ## 화면 흐름.
 ##
 ## 새 흐름 "AI 졸업시키기" (settings.newflow, 기본):
-##   대기 → 1단계 새내기(보기) → 내 손으로 상벌 → 2단계 연습생(맞혀 보기) → 상벌
-##        → 빨리 감기(AI 혼자 1500판) → 3단계 졸업 시험 → 상벌 → 졸업장 → 대기
+##   세 판씩 묶어 두고, 묶음이 끝날 때마다 한 가지를 설명한다 (약 8~10분):
+##   대기 → 1단계 새내기 3판(보기) → 설명 "AI는 이렇게 둬요"
+##        → 2단계 3판(맞혀 보기 + 내 손으로 상벌) → 설명 "내가 준 상과 벌로 달라졌어요"
+##        → 빨리 감기(AI 혼자 1500판) → 3단계 졸업 시험 3판 → 졸업장 → 대기
+##   놀이 화면(GameScreen)은 판이 하나다: AI의 구슬을 틱택토 판의 빈칸에 바로 보여 준다.
 ##   학생마다 아무것도 모르는 새 AI(session_brain)로 시작한다. 학생이 둔 판은 "우리 반 AI"(brain, 저장됨)에도 쌓인다.
 ##
 ## 예전 흐름 (선생님 메뉴에서 바꿈, 비교용):
@@ -27,6 +30,10 @@ var teacher: TeacherLayer
 ## 이번 학생의 AI (새 흐름). 빨리 감기로 연습한 판 수가 trained
 var session_brain: Dictionary
 var trained := 0
+## 새 흐름: round_i가 단계(1~3), game_i가 그 단계의 몇 판째(1~SET_GAMES). _exam은 졸업 시험 세 판의 결과
+const SET_GAMES := 3
+var game_i := 1
+var _exam := {"kid": 0, "draw": 0, "ai": 0}
 ## 이번 체험이 새 흐름인지 (도중에 설정을 바꿔도 끝까지 같은 흐름)
 var _flow_new := false
 var _last_touch := 0
@@ -192,6 +199,8 @@ func start_session() -> void:
 	if _flow_new:
 		session_brain = Menace.new_brain()
 		trained = 0
+		game_i = 1
+		_exam = {"kid": 0, "draw": 0, "ai": 0}
 		today = Today.add_teacher(today)
 		Store.save_today(today)
 		start_play()
@@ -205,12 +214,14 @@ func start_session() -> void:
 
 
 func start_play() -> void:
-	Telemetry.stage("play%d" % round_i)
-	var s: PlayScreen
 	if _flow_new:
-		s = PlayScreen.new(session_brain, round_i, 3, score, today.games, settings.percent, {"newflow": true, "predict": round_i >= 2, "teach": true, "trained": trained})
-	else:
-		s = PlayScreen.new(brain, round_i, settings.rounds, score, today.games, settings.percent)
+		Telemetry.stage("play%d-%d" % [round_i, game_i])
+		var g := GameScreen.new(session_brain, {"set": round_i, "game": game_i, "games": SET_GAMES, "trained": trained, "percent": settings.percent}, score, today.games)
+		g.round_end.connect(_on_round_end)
+		_show(g)
+		return
+	Telemetry.stage("play%d" % round_i)
+	var s := PlayScreen.new(brain, round_i, settings.rounds, score, today.games, settings.percent)
 	s.round_end.connect(_on_round_end)
 	_show(s)
 
@@ -262,11 +273,34 @@ func _on_stage_end(end: Dictionary) -> void:
 	today = Today.add_result(today, end.outcome)
 	score = score.duplicate()
 	score[end.outcome] += 1
-	Telemetry.add_round({"stage": round_i, "outcome": end.outcome, "moves": end.moves.size(), "resigned": end.resigned, "predict": end.predict, "teach": end.teach})
-	if round_i == 3:
-		_show_grad(end.outcome)
-		return
+	Telemetry.add_round({"stage": round_i, "game": game_i, "outcome": end.outcome, "moves": end.moves.size(), "resigned": end.resigned, "predict": end.predict, "teach": end.teach})
 	Store.save_today(today)
+	if round_i == 3:
+		_exam[end.outcome] += 1
+	# 묶음의 판이 남았으면 다음 판
+	if game_i < SET_GAMES:
+		game_i += 1
+		start_play()
+		return
+	game_i = 1
+	if round_i == 3:
+		# 졸업 시험 세 판: 학생이 더 많이 이겼으면 "kid", AI가 더 많이 이겼으면 "ai", 같으면 "draw"
+		var exam := "draw"
+		if _exam.kid > _exam.ai:
+			exam = "kid"
+		elif _exam.ai > _exam.kid:
+			exam = "ai"
+		_show_grad(exam)
+		return
+	# 묶음이 끝났다: 방금 본 것을 한 가지 설명한다
+	Telemetry.stage("explain%d" % round_i)
+	var first := Menace.beads_on_board(session_brain, Ttt.empty_board())
+	var s := ExplainScreen.new("pick" if round_i == 1 else "change", first, SelfPlay.TRAIN_GAMES)
+	s.done.connect(_after_explain)
+	_show(s)
+
+
+func _after_explain() -> void:
 	if round_i == 1:
 		round_i = 2
 		start_play()
@@ -336,6 +370,9 @@ func _on_setting_changed(key: String, value: Variant) -> void:
 	elif key == "percent" and screen is PlayScreen:
 		screen._box.percent = value
 		screen._box.queue_redraw()
+	elif key == "percent" and screen is GameScreen:
+		screen._view.percent = value
+		screen._view.queue_redraw()
 	elif key == "newflow" and screen is IdleScreen:
 		to_idle()
 
