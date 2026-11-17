@@ -295,7 +295,7 @@ func _on_stage_end(end: Dictionary) -> void:
 	# 묶음이 끝났다: 방금 본 것을 한 가지 설명한다
 	Telemetry.stage("explain%d" % round_i)
 	var first := Menace.beads_on_board(session_brain, Ttt.empty_board())
-	var s := ExplainScreen.new("pick" if round_i == 1 else "change", first, SelfPlay.TRAIN_GAMES)
+	var s := ExplainScreen.new("pick" if round_i == 1 else "change", first, SelfPlay.TRAIN_GAMES, int(session_brain.games))
 	s.done.connect(_after_explain)
 	_show(s)
 

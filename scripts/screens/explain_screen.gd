@@ -14,6 +14,8 @@ const START := [4, 4, 4, 4, 4, 4, 4, 4, 4]
 var kind: String
 var now_beads: Array
 var train_games: int
+## 지금까지 학생이 둔 판 수 (설명에 실제 수를 적는다)
+var played := 0
 
 var _title: Label
 var _art: Drawn
@@ -23,7 +25,8 @@ var _time := 0.0
 var _gone := false
 
 
-func _init(k: String, beads: Array = [], games := 0) -> void:
+func _init(k: String, beads: Array = [], games := 0, played_games := 0) -> void:
+	played = played_games
 	kind = k
 	now_beads = beads
 	train_games = games
@@ -52,10 +55,10 @@ func _change_line() -> String:
 	var a: int = START[best]
 	var b: int = now_beads[best]
 	if b > a:
-		return "여섯 판을 두는 동안 %s 칸의 구슬이 %d개에서 %d개로 늘었어요." % [Ttt.CELL_NAMES[best], a, b]
+		return "지금까지 %d판을 두는 동안 %s 칸의 구슬이 %d개에서 %d개로 늘었어요." % [played, Ttt.CELL_NAMES[best], a, b]
 	if b < a:
-		return "여섯 판을 두는 동안 %s 칸의 구슬이 %d개에서 %d개로 줄었어요." % [Ttt.CELL_NAMES[best], a, b]
-	return "여섯 판을 두는 동안 AI의 구슬이 조금씩 바뀌었어요."
+		return "지금까지 %d판을 두는 동안 %s 칸의 구슬이 %d개에서 %d개로 줄었어요." % [played, Ttt.CELL_NAMES[best], a, b]
+	return "지금까지 %d판을 두는 동안 AI의 구슬이 조금씩 바뀌었어요." % played
 
 
 func build() -> void:
