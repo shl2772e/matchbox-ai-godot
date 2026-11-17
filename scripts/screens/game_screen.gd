@@ -158,7 +158,7 @@ func enter() -> void:
 	var line := ""
 	match set_i:
 		1:
-			line = "AI는 구슬이 가장 많은 칸을 골라요." if game_i == 1 else ""
+			line = "AI는 구슬이 많은 칸을 더 잘 골라요." if game_i == 1 else ""
 			_machine.mood = "lost"
 		2:
 			line = "AI가 집을 칸을 맞혀 보고, 끝나면 내 손으로 상과 벌을 줘요." if game_i == 1 else ""
@@ -282,9 +282,9 @@ func _pick(b: Array, move: Dictionary) -> void:
 		_asked_now = false
 		# 맞혀 본 차례: 맞고 틀림을 크게 알리지 않고 사실만 말한다
 		var top: int = _view.beads.max()
-		var line := "AI는 구슬이 가장 많은 칸을 골랐어요."
+		var line := "AI는 구슬이 많은 칸을 골랐어요."
 		if _view.beads.count(top) > 1:
-			line = "가장 많은 칸이 여럿이라 그 가운데 하나를 골랐어요."
+			line = "구슬 수가 같은 칸이 여럿이라 그 가운데 하나를 골랐어요."
 		if _view.guess == cell:
 			line += " 내가 고른 칸이에요."
 		_say(line)

@@ -30,6 +30,7 @@ var _right: Panel
 var _right_items: Array[Label] = []
 var _quiz: Panel
 var _quiz_q: Label
+var _quiz_badge: Label
 var _quiz_buttons: Array[Button] = []
 var _quiz_a: Label
 var _bs := Kit.R * 9.0
@@ -112,10 +113,13 @@ func build() -> void:
 		_right.add_child(l)
 		_right_items.append(l)
 	_quiz = Panel.new()
-	var qs := Kit.box(Kit.CREAM, R * 0.8, R * 0.11, Kit.LINE)
+	# 퀴즈인 것이 한눈에 보이게: 겨자색 테두리 칸 + 빨간 "퀴즈" 이름표 + 단추처럼 보이는 보기 셋
+	var qs := Kit.box(Kit.PICK, R * 0.8, R * 0.16, Kit.MUSTARD)
 	_quiz.add_theme_stylebox_override("panel", qs)
 	add_child(_quiz)
-	_quiz_q = Kit.label("한 문제! AI가 진 다음, AI가 둔 칸의 구슬은 어떻게 될까요?", Kit.F_BOLD, R * 1.25, Kit.INK, HORIZONTAL_ALIGNMENT_CENTER, true)
+	_quiz_badge = Kit.pill("퀴즈", "ai", 1.3)
+	_quiz.add_child(_quiz_badge)
+	_quiz_q = Kit.label("AI가 진 다음, AI가 둔 칸의 구슬은 어떻게 될까요?", Kit.F_BOLD, R * 1.25, Kit.INK, HORIZONTAL_ALIGNMENT_LEFT, true)
 	_quiz.add_child(_quiz_q)
 	for c in CHOICES:
 		var b := Kit.button(c[0], "soft")
@@ -204,14 +208,18 @@ func relayout() -> void:
 	bw += R * 1.0 * (_quiz_buttons.size() - 1)
 	var bh: float = _quiz_buttons[0].size.y
 	var bx := (w - bw) / 2
+	_quiz_badge.size = _quiz_badge.get_combined_minimum_size()
+	var badge_w := _quiz_badge.size.x + R * 0.8
 	if vertical:
-		qy += Kit.place(_quiz_q, Vector2(R * 1.2, qy), w - R * 2.4) + R * 0.6
+		_quiz_badge.position = Vector2(R * 1.2, qy)
+		qy += Kit.place(_quiz_q, Vector2(R * 1.2 + badge_w, qy), w - R * 2.4 - badge_w) + R * 0.6
 	else:
-		# 가로 화면: 왼쪽에 물음, 오른쪽에 단추 (세로로 자리를 덜 쓴다)
-		var qw := w - bw - R * 3.6
+		# 가로 화면: 왼쪽에 "퀴즈" 이름표와 물음, 오른쪽에 보기 단추 (세로로 자리를 덜 쓴다)
+		var qw := w - bw - R * 3.6 - badge_w
 		var qh := Kit.wrapped_height(_quiz_q, qw)
 		var row := maxf(qh, bh)
-		Kit.place(_quiz_q, Vector2(R * 1.2, qy + (row - qh) / 2), qw)
+		_quiz_badge.position = Vector2(R * 1.2, qy + (row - _quiz_badge.size.y) / 2)
+		Kit.place(_quiz_q, Vector2(R * 1.2 + badge_w, qy + (row - qh) / 2), qw)
 		bx = w - bw - R * 1.2
 		qy += (row - bh) / 2
 	for b in _quiz_buttons:

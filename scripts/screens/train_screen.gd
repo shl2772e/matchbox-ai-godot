@@ -60,7 +60,7 @@ func build() -> void:
 	add_child(_stage)
 	_title = Kit.label("AI가 혼자 연습해요", Kit.F_TITLE, R * 2.4, Kit.NAVY, HORIZONTAL_ALIGNMENT_CENTER)
 	add_child(_title)
-	_line = Kit.label("단추를 누르고 있으면 AI가 혼자 연습해요. 연습할 때는 구슬을 아무거나 집어서 여러 수를 시험해 봐요.", Kit.F_BODY, R * 1.3, Kit.INK, HORIZONTAL_ALIGNMENT_CENTER, true)
+	_line = Kit.label("단추를 누르고 있으면 AI가 혼자 연습해요. 한 판이 끝날 때마다 스스로 구슬을 고쳐요.", Kit.F_BODY, R * 1.3, Kit.INK, HORIZONTAL_ALIGNMENT_CENTER, true)
 	add_child(_line)
 	_graph = Drawn.new(_paint_graph)
 	add_child(_graph)
