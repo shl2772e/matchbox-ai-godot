@@ -292,17 +292,21 @@ static func paint_first_box(ci: CanvasItem, r: Rect2, beads: Array, title: Strin
 	for i in 9:
 		var cr := Rect2(ox + (i % 3) * (cs + gap), oy + (i / 3) * (cs + gap), cs, cs)
 		Kit.rrect(ci, cr, Kit.PICK if beads[i] == top and top > 0 else Kit.TRAY, R * 0.35)
-		var br := cs * 0.085
-		var tens: int = beads[i] / 10
-		var ones: int = beads[i] % 10 if beads[i] > 10 else beads[i]
-		if beads[i] <= 10:
-			tens = 0
-		var k := 0
-		# 10개짜리 큰 구슬을 먼저, 그 옆에 1개짜리 (자리가 좁아 여섯 개까지만 그린다. 정확한 수는 아래 숫자)
+		# 그림도표처럼: 큰 구슬 하나가 10개, 작은 구슬 하나가 1개. 수를 그대로 다 그린다
+		var total_n: int = beads[i]
+		var tens: int = total_n / 10 if total_n > 10 else 0
+		var ones: int = total_n - tens * 10
+		var big_r := cs * 0.125
+		var br := cs * 0.058
+		var y0 := cr.position.y + cs * 0.17
 		for t in tens:
-			Kit.bead(ci, Vector2(cr.position.x + cs * 0.5 + (k % 3 - 1) * br * 2.4, cr.position.y + cs * 0.2 + (k / 3) * br * 2.4), br * 1.25, i)
-			k += 1
-		for o in mini(ones, 6 - k):
-			Kit.bead(ci, Vector2(cr.position.x + cs * 0.5 + (k % 3 - 1) * br * 2.4, cr.position.y + cs * 0.2 + (k / 3) * br * 2.4), br * 0.8 if tens > 0 else br, i)
-			k += 1
-		Kit.text(ci, Kit.F_TITLE, cs * 0.4, str(beads[i]), Rect2(cr.position.x, cr.position.y + cs * 0.46, cs, cs * 0.5), Kit.INK)
+			var bp := Vector2(cr.position.x + cs * 0.5 + (t - (tens - 1) / 2.0) * big_r * 2.25, y0)
+			Kit.bead(ci, bp, big_r, i)
+			if big_r >= R * 0.3:
+				Kit.text(ci, Kit.F_LABEL, big_r * 0.95, "10", Rect2(bp - Vector2(big_r, big_r * 0.75), Vector2(big_r * 2, big_r * 1.5)), Kit.CREAM)
+		var y1 := y0 + (big_r + br * 1.4 if tens > 0 else 0.0)
+		for k in ones:
+			var row := k / 5
+			var in_row := mini(5, ones - row * 5)
+			Kit.bead(ci, Vector2(cr.position.x + cs * 0.5 + (k % 5 - (in_row - 1) / 2.0) * br * 2.3, y1 + row * br * 2.3), br, i)
+		Kit.text(ci, Kit.F_TITLE, cs * 0.32, str(beads[i]), Rect2(cr.position.x, cr.position.y + cs * 0.56, cs, cs * 0.42), Kit.INK)
