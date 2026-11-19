@@ -50,6 +50,17 @@ static func paint(ci: CanvasItem, r: Rect2, entries: Array, rows: int, title: St
 			var k := 0
 			for t in plan.size():
 				for n in int(plan[t]):
-					Kit.rrect(ci, Rect2(px + k * (sq + R * 0.15), y + (row.size.y - sq) / 2, sq, sq), PLAN_COLORS[t % 3], R * 0.15)
+					plan_mark(ci, Rect2(px + k * (sq + R * 0.15), y + (row.size.y - sq) / 2, sq, sq), t % 3)
 					k += 1
 		Kit.text(ci, Kit.F_TITLE, fs, "%d점" % e.score, Rect2(row.end.x - score_w - R * 0.4, y, score_w, row.size.y), Kit.NAVY, HORIZONTAL_ALIGNMENT_RIGHT)
+
+
+## 계획 표시: 색을 못 가려도 알 수 있게 모양도 다르다 (아무 데나 = 동그라미, 막을 줄 아는 = 네모, 아주 잘 두는 = 세모)
+static func plan_mark(ci: CanvasItem, q: Rect2, kind: int) -> void:
+	var col: Color = PLAN_COLORS[kind]
+	if kind == 0:
+		ci.draw_circle(q.get_center(), q.size.x / 2, col, true, -1.0, true)
+	elif kind == 1:
+		Kit.rrect(ci, q, col, Kit.R * 0.15)
+	else:
+		ci.draw_colored_polygon(PackedVector2Array([Vector2(q.get_center().x, q.position.y), q.end, Vector2(q.position.x, q.end.y)]), col)

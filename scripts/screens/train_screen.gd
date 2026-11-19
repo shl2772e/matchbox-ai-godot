@@ -67,7 +67,7 @@ func build() -> void:
 	add_child(_stage)
 	_title = Kit.label("AI가 혼자 연습해요" if plan.is_empty() else "내 계획대로 연습하고 있어요", Kit.F_TITLE, R * 2.4, Kit.NAVY, HORIZONTAL_ALIGNMENT_CENTER)
 	add_child(_title)
-	_line = Kit.label("단추를 누르고 있으면 AI가 혼자 연습해요. 한 판이 끝날 때마다 스스로 구슬을 고쳐요." if plan.is_empty() else "AI가 내가 고른 친구들과 %d판을 연습해요. 한 판이 끝날 때마다 스스로 구슬을 고쳐요." % GAMES, Kit.F_BODY, R * 1.3, Kit.INK, HORIZONTAL_ALIGNMENT_CENTER, true)
+	_line = Kit.label("단추를 꾹 누르면 AI가 혼자 연습해요." if plan.is_empty() else "내가 고른 친구들과 %d판을 연습해요." % GAMES, Kit.F_BODY, R * 1.3, Kit.INK, HORIZONTAL_ALIGNMENT_CENTER, true)
 	add_child(_line)
 	_graph = Drawn.new(_paint_graph)
 	add_child(_graph)
@@ -188,7 +188,7 @@ func _process(delta: float) -> void:
 		_idle += delta
 		if _idle >= AUTO_S:
 			_auto = true
-			Kit.set_text(_line, "AI가 혼자 두기 시작했어요. 막대가 어떻게 바뀌는지 보세요.")
+			Kit.set_text(_line, "남색(진 판)이 줄어드는지 보세요.")
 
 
 func _play_one() -> void:
@@ -213,12 +213,12 @@ func _finish() -> void:
 		else:
 			last += _buckets[i].kid
 	var n := GAMES / 2
-	var s := "처음 %d판에서는 %d판을 졌고, 나중 %d판에서는 %d판을 졌어요." % [n, first, n, last]
+	var s := "처음 %d판에서는 %d판, 나중 %d판에서는 %d판을 졌어요." % [n, first, n, last]
 	if last < first:
-		s += " 조금씩 수백 번 고친 것이 실력이 됐어요."
+		s += " 연습할수록 덜 져요."
 		_machine.mood = "happy"
 	else:
-		s += " 아직 많이 져요. 배우려면 더 많은 판이 필요해요."
+		s += " 아직 많이 져요."
 		_machine.mood = "calm"
 	Kit.set_text(_title, "%d판을 뒀어요" % GAMES)
 	Kit.set_text(_line, s)

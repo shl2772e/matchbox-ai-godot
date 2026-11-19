@@ -68,9 +68,9 @@ func _change_line() -> String:
 	var a: int = START[best]
 	var b: int = now_beads[best]
 	if b > a:
-		return "%s 칸 구슬이 %d개에서 %d개로 늘었어요. AI가 이 칸을 좋아하게 됐어요." % [Ttt.CELL_NAMES[best], a, b]
+		return "%s 칸 구슬이 %d개에서 %d개로 늘었어요. 이제 이 칸을 더 자주 둬요." % [Ttt.CELL_NAMES[best], a, b]
 	if b < a:
-		return "%s 칸 구슬이 %d개에서 %d개로 줄었어요. AI가 이 칸을 피하게 됐어요." % [Ttt.CELL_NAMES[best], a, b]
+		return "%s 칸 구슬이 %d개에서 %d개로 줄었어요. 이제 이 칸을 덜 둬요." % [Ttt.CELL_NAMES[best], a, b]
 	return "첫 상자의 구슬은 그대로예요."
 
 
@@ -78,11 +78,11 @@ func build() -> void:
 	var R := Kit.R
 	_title = Kit.label("AI 졸업장", Kit.F_TITLE, R * 2.2, Kit.NAVY, HORIZONTAL_ALIGNMENT_CENTER)
 	add_child(_title)
-	var sub := "졸업 시험에서 AI가 더 많이 이겼어요. 내가 잘 가르쳤어요. "
+	var sub := "AI가 졸업 시험에서 이겼어요. 잘 가르쳤어요. "
 	if exam == "draw":
-		sub = "졸업 시험에서 AI와 비겼어요. 아주 잘한 거예요. "
+		sub = "졸업 시험에서 비겼어요. 아주 잘했어요. "
 	elif exam == "kid":
-		sub = "졸업 시험에서 내가 더 많이 이겼어요. 정말 대단해요. "
+		sub = "졸업 시험에서 내가 이겼어요. 대단해요. "
 	_sub = Kit.label(sub + "나는 \"%s\"이에요." % nickname(), Kit.F_BODY, R * 1.3, Kit.INK, HORIZONTAL_ALIGNMENT_CENTER, true)
 	add_child(_sub)
 	for p in [["나 %d" % score.kid, "kid"], ["비김 %d" % score.draw, "draw"], ["AI %d" % score.ai, "ai"]]:
@@ -102,7 +102,7 @@ func build() -> void:
 	add_child(_right)
 	var lines := [
 		["이게 강화학습이에요", Kit.F_TITLE, 1.6, Kit.MUSTARD],
-		["AI는 정답을 배운 게 아니에요. 해 보고, 결과가 좋으면 더 하고, 나쁘면 덜 해요.", Kit.F_BODY, 1.2, Kit.CREAM],
+		["해 보고, 좋으면 더 하고, 나쁘면 덜 해요.", Kit.F_BODY, 1.2, Kit.CREAM],
 		["요즘 게임 AI도 구슬 대신 숫자로 똑같이 배워요.", Kit.F_BODY, 1.2, Kit.CREAM],
 	]
 	if percent:
@@ -148,7 +148,7 @@ func _answer(choice: String, pressed: Button) -> void:
 	for b in _quiz_buttons:
 		b.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		b.modulate.a = 1.0 if b == pressed or b == _quiz_buttons[1] else 0.45
-	Kit.set_text(_quiz_a, ("맞아요. " if ok else "") + "AI가 지면 그 칸의 구슬을 1개 빼요. 그래서 줄어들어요.")
+	Kit.set_text(_quiz_a, ("맞아요. " if ok else "") + "AI가 지면 그 칸의 구슬을 1개 빼요.")
 	_quiz_a.visible = true
 	Sfx.learn()
 	answered.emit(choice, ok)

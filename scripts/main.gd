@@ -174,6 +174,13 @@ func _show(s: ScreenBase) -> void:
 	add_child(s)
 	s.modulate.a = 0.0
 	create_tween().tween_property(s, "modulate:a", 1.0, 0.25)
+	# 화면이 바뀐 직후 0.4초 동안은 누르는 것을 받지 않는다 (앞 화면의 단추 자리를 그대로 눌러 넘어가 버리지 않게)
+	var shield := Control.new()
+	shield.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	shield.mouse_filter = Control.MOUSE_FILTER_STOP
+	shield.z_index = 4
+	add_child(shield)
+	get_tree().create_timer(0.4).timeout.connect(shield.queue_free)
 
 
 func to_idle() -> void:
@@ -341,7 +348,7 @@ func _on_stage_end(end: Dictionary) -> void:
 	today = Today.add_result(today, end.outcome)
 	score = score.duplicate()
 	score[end.outcome] += 1
-	Telemetry.add_round({"stage": round_i, "game": game_i, "outcome": end.outcome, "moves": end.moves.size(), "resigned": end.resigned, "predict": end.predict, "teach": end.teach})
+	Telemetry.add_round({"stage": round_i, "game": game_i, "outcome": end.outcome, "moves": end.moves.size(), "resigned": end.resigned, "predict": end.predict, "teach": end.teach, "explored": end.get("explored", 0), "kid_ms": end.get("kid_ms", [])})
 	Store.save_today(today)
 	if round_i == 3:
 		_exam[end.outcome] += 1

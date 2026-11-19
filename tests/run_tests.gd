@@ -51,6 +51,21 @@ func _init() -> void:
 		if c.kind == "move" and c.move.cell == 4:
 			center += 1
 	check(center / 2000.0 > 0.86 and center / 2000.0 < 0.94, "구슬 비율대로 고름")
+	# 학생과 둘 때: 구슬이 많은 칸으로 쏠리고, 돌려준 확률(화면의 %)대로 뽑힌다
+	brain.boxes[Menace.FIRST_KEY] = [7, 0, 0, 0, 4, 0, 0, 0, 4]
+	var want: float = Menace.chances([7, 4, 4], Menace.FOCUS_KID)[0]
+	var tops := 0
+	var flagged := 0
+	for i in 4000:
+		var cf := Menace.choose_move(brain, Ttt.empty_board(), rng, Menace.FOCUS_KID)
+		if cf.move.cell == 0:
+			tops += 1
+		if cf.top == (cf.move.cell == 0):
+			flagged += 1
+	check(want > 0.7 and absf(tops / 4000.0 - want) < 0.03, "학생과 둘 때는 많은 칸으로 쏠림 (%.2f, 실제 %.2f)" % [want, tops / 4000.0])
+	check(flagged == 4000, "가장 높은 칸을 골랐는지 표시")
+	var shown: Array = Menace.choose_move(brain, Ttt.empty_board(), rng, Menace.FOCUS_KID).chances
+	check(absf(shown[0] - want) < 0.001 and absf(shown[0] + shown[4] + shown[8] - 1.0) < 0.001, "화면에 보일 확률")
 
 	brain = Menace.new_brain()
 	var c0 := Menace.choose_move(brain, Ttt.empty_board(), SeededRng.new(1))
@@ -108,6 +123,23 @@ func _init() -> void:
 	check(Telemetry.active(), "기록 시작")
 	Telemetry.end("grad")
 	check(not Telemetry.active(), "기록 끝")
+
+	# 체험 통계: 기록 묶음에서 합계와 가운데 값
+	var recs := [
+		{"flow": "new", "end": "grad", "after": "again", "quiz": {"correct": true}, "stages": [{"name": "play1-1", "ms": 60000.0}, {"name": "explain1", "ms": 8000.0}, {"name": "grad", "ms": 5000.0}],
+			"rounds": [{"stage": 1.0, "outcome": "kid", "kid_ms": [1000.0, 3000.0, 2000.0], "explored": 1.0, "predict": {"offered": true, "answered": true, "hit": true, "ms": 1500.0}, "teach": {"manual": 2.0, "total": 3.0}}]},
+		{"flow": "new", "end": "timeout", "stages": [{"name": "play1-1", "ms": 90000.0}], "rounds": []},
+		{"flow": "contest", "end": "left", "score": 520.0, "plan": [2.0, 3.0, 1.0], "stages": [{"name": "plan", "ms": 12000.0}], "rounds": []},
+	]
+	var sum := Stats.summary(recs)
+	var flat := {}
+	for part in sum:
+		for row in part[1]:
+			flat[part[0] + "/" + row[0]] = row[1]
+	check(flat["AI 가르치기/시작한 횟수"] == "2번" and flat["AI 가르치기/졸업장까지 간 비율"] == "50% (1 / 2)", "통계: 끝까지 간 비율")
+	check(flat["AI 가르치기/1단계 승패"] == "학생 1 · 비김 0 · AI 0" and flat["AI 가르치기/1단계 한 수 두는 데 걸린 시간 (가운데 값)"] == "2.0초", "통계: 승패와 반응 시간")
+	check(flat["AI 가르치기/졸업장까지 걸린 시간 (가운데 값)"] == "1분 8초" and flat["AI 가르치기/퀴즈 정답 비율"] == "100% (1 / 1)", "통계: 걸린 시간과 퀴즈")
+	check(flat["AI 키우기 대회/점수 (평균 / 가장 높은 점수)"] == "520점 / 520점", "통계: 대회 점수")
 
 	# 이름 자판: 낱자를 글자로 모으기
 	check(Hangul.compose(["ㅅ", "ㅓ", "ㅇ", "ㄴ", "ㅑ", "ㅇ"]) == "성냥", "한글 모으기 성냥")

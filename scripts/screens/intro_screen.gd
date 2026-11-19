@@ -11,24 +11,24 @@ const PAGES := [
 	{
 		"kind": "news",
 		"title": "1961년, 성냥갑으로 만든 AI",
-		"text": "컴퓨터가 아주 귀하던 때예요. 영국의 도널드 미치 박사는 성냥갑 304개와 구슬로 틱택토를 두는 기계를 만들었어요. 기계의 이름은 메나스예요.",
-		"caption": "성냥갑 304개로 만든 메나스(MENACE). 2018년에 똑같이 다시 만든 것.  사진 Matthew Scroggs · CC BY-SA 4.0",
+		"text": "영국의 도널드 미치 박사가 성냥갑과 구슬로 틱택토를 두는 기계를 만들었어요.",
+		"caption": "성냥갑 304개로 다시 만든 메나스(MENACE), 2018년.  사진 Matthew Scroggs · CC BY-SA 4.0",
 	},
 	{
 		"kind": "album",
 		"title": "지기만 하던 기계가 달라졌어요",
-		"text": "박사는 이 기계와 220판을 뒀어요. 처음에는 기계가 계속 졌어요. 그런데 스무 판쯤 지나자 비기기 시작했어요. 이기는 법은 아무도 알려 주지 않았는데요.",
+		"text": "처음에는 기계가 계속 졌어요. 스무 판쯤 지나자 비기기 시작했어요.",
 		"caption": "사진 Petermowforth · CC BY-SA 3.0   그래프 Matthew Scroggs · CC BY-SA 4.0",
 	},
 	{
 		"kind": "tray",
 		"title": "성냥갑 속 구슬이 기계의 생각",
-		"text": "판 모양마다 성냥갑이 하나씩 있어요. 상자 속에는 칸마다 구슬이 들어 있어요. 기계는 구슬을 하나 꺼내서 그 칸에 둬요. 구슬이 많은 칸이 더 잘 나와요.",
+		"text": "기계는 구슬을 하나 꺼내서 그 칸에 둬요. 구슬이 많은 칸이 더 잘 나와요.",
 	},
 	{
 		"kind": "rewards",
 		"title": "이기면 넣고, 지면 빼요",
-		"text": "판이 끝나면 구슬을 고쳐요. 이기면 3개 넣고, 비기면 1개 넣고, 지면 1개 빼요. 그러면 좋은 수는 자주 나오고 나쁜 수는 사라져요. 이것이 기계가 배우는 방법이에요.",
+		"text": "그러면 좋은 수는 자주 나오고, 나쁜 수는 사라져요.",
 	},
 ]
 const TRAY := [4, 1, 2, 0, 3, 1, 2, 4, 1]
@@ -94,7 +94,7 @@ func build() -> void:
 		_skip.visible = false
 		_next.visible = false
 		mouse_filter = Control.MOUSE_FILTER_STOP
-		_tap = Kit.pill("화면을 누르면 시작해요", "kid", 1.5)
+		_tap = Kit.pill("화면을 누르면 처음으로 가요", "kid", 1.5)
 		add_child(_tap)
 	_show_page()
 

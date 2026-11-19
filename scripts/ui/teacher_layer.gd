@@ -217,6 +217,7 @@ func _open_menu() -> void:
 	_item(items, "소리: " + _on_off(settings.sound), "soft", _toggle.bind("sound", not settings.sound))
 	if not OS.has_feature("web"):
 		_item(items, "전체화면: " + _on_off(full), "soft", _toggle_fullscreen)
+	_item(items, "체험 통계 (걸린 시간, 승패)", "soft", _open_stats.bind(true))
 	_item(items, "오늘 기록 지우기", "danger", _open_confirm.bind("오늘 기록(판 수, 승·무·패)을 지울까요? AI 구슬은 그대로예요.", "지우기", clear_today.emit))
 	_item(items, "대회 순위 지우기", "danger", _open_confirm.bind("AI 키우기 대회 순위를 모두 지울까요?", "지우기", clear_ranking.emit))
 	_item(items, "비밀번호 바꾸기", "soft", _open_password.bind("new"))
@@ -441,15 +442,15 @@ func toast(s: String) -> void:
 
 # ---------- 교사용 안내 (선생님 메뉴의 i 단추) ----------
 
-## [제목, 본문] 묶음. 본문의 줄바꿈은 그대로 나온다
+## [제목, 본문] 묶음. 본문은 한 줄에 한 가지만 (줄바꿈마다 새 줄). 훑어봐도 알 수 있게 짧게 쓴다
 const GUIDE := [
-	["이 프로그램은", "1961년 영국의 도널드 미치가 성냥갑과 구슬로 만든 틱택토 기계(MENACE)를 다시 만든 체험이에요. 학생 한 명이 8~10분 동안 AI를 가르치면서 강화학습의 원리를 익혀요. 원리는 한 문장이에요. \"해 보고, 결과가 좋으면 더 하고, 나쁘면 덜 한다.\""],
-	["한 번의 흐름 (8~10분)", "세 판씩 두고, 묶음이 끝날 때마다 한 가지를 설명해요. 놀이 중에는 글을 거의 띄우지 않아요.\n1단계 3판: 아무것도 모르는 AI와 둬요. 판의 빈칸에 AI의 구슬과 확률(%)이 보이고, 기계 집게가 구슬을 집어요. 판이 끝나면 AI가 둔 칸의 구슬이 저절로 늘거나 줄어요.\n설명 1: 구슬이 많은 칸일수록 AI가 더 잘 고른다. 이기면 3개, 비기면 1개 늘고, 지면 1개 준다.\n2단계 3판: AI가 고를 칸을 한 번 맞혀 보고, 판이 끝나면 AI가 둔 칸을 눌러 내 손으로 구슬을 넣거나 빼요.\n설명 2: 내가 준 상과 벌로 첫 상자의 구슬이 이렇게 달라졌다.\n빨리 감기: AI가 혼자 1500판을 연습해요. 이때는 원래 규칙대로 구슬 수에 비례한 확률로 골라요.\n졸업 시험 3판: 연습한 AI와 둬요. 거의 이길 수 없고, 비기면 아주 잘한 거예요.\n선생님만 알아 두세요: 학생과 둘 때는 헷갈리지 않게 AI가 구슬이 가장 많은 칸을 고르도록 해 두었어요. 화면 문구에는 \"많을수록 더 잘 고른다\"라고만 적어요. 확률이 낮은 칸도 뽑힐 수 있다는 점은 말로 덧붙여 주세요.
-졸업장: 처음 상자와 지금 상자를 견주고, 한 문제를 풀어요. \"강화학습\"이라는 말은 여기서 처음 나와요."],
-	["체험 뒤에 물어볼 질문 세 가지", "1. AI는 처음부터 이기는 법을 알고 있었나요?\n2. AI가 진 다음에 그 칸의 구슬은 어떻게 됐나요? 왜 그렇게 했을까요?\n3. 졌는데도 구슬을 넣어 주면(상을 거꾸로 주면) AI는 어떻게 될까요?\n세 번째 질문은 \"AI는 사람이 준 상과 벌대로 배운다\"로 이어 가기 좋아요."],
-	["AI 키우기 대회", "가르치기를 끝낸 학생이 여러 번 해 보는 곳이에요. 한 번에 2분쯤 걸려요.\n새내기 AI의 연습 600판을 세 친구(아무 데나 두는 친구, 막을 줄 아는 친구, 아주 잘 두는 친구)에게 나눠 주면, 그 계획대로 키운 AI 5대가 시험을 봐서 평균 점수가 나와요. 이기면 3점, 비기면 1점이고 가장 높은 점수는 900점이에요.\n배울 점: AI는 무엇으로 연습했느냐에 따라 실력이 달라져요. 아주 잘 두는 친구하고만 연습시키면 오히려 점수가 낮아요. 늘 같은 좋은 수만 보게 되어, 엉뚱하게 두는 상대를 만나면 무너지기 때문이에요.\n같은 계획도 점수가 조금씩 달라져요(±20점쯤). 순위는 이 컴퓨터에만 남고, 메뉴의 \"대회 순위 지우기\"로 지울 수 있어요. 이름은 6글자까지예요."],
-	["운영할 때", "한 명씩 하고, 옆에서 도와주지 않아도 끝까지 갈 수 있게 만들었어요. 막히는 곳이 보이면 적어 두었다가 알려 주세요.\n60초 동안 아무도 누르지 않으면 처음 화면으로 돌아가요. 처음 화면을 20초쯤 그대로 두면 1961년 이야기가 저절로 넘어가요. 기다리는 학생이 볼 수 있어요.\n중학생에게는 메뉴의 \"확률(%) 숫자 보이기\"를 켜 주세요. 졸업장에 상태·행동·보상이라는 낱말이 붙어요.\n\"놀이 방식\"을 예전 흐름으로 바꾸면 안내 4장을 읽고 여러 판을 두는 방식이 돼요."],
-	["기록", "체험 한 번마다 이름 없는 기록 한 줄이 이 컴퓨터에 남아요. 걸린 시간, 승패, 맞혀 보기와 문제의 답이 들어 있고, 이름이나 얼굴은 남기지 않아요.\n저장 위치: 이 컴퓨터의 AppData/Roaming/matchbox-ai-godot/records 폴더"],
+	["한 줄로", "1961년에 성냥갑과 구슬로 만든 틱택토 기계를 학생이 직접 가르쳐 봐요.\n원리: 해 보고, 결과가 좋으면 더 하고, 나쁘면 덜 한다."],
+	["AI 가르치기 (8~10분)", "1단계 3판: AI가 구슬을 집어 두는 것을 봐요.\n2단계 3판: AI가 고를 칸을 맞혀 보고, 내 손으로 상과 벌을 줘요.\n빨리 감기: AI가 혼자 1500판을 연습해요.\n졸업 시험 3판: 거의 못 이겨요. 비기면 잘한 거예요."],
+	["AI가 칸을 고르는 법", "칸에 적힌 %가 실제로 뽑힐 확률이에요.\n학생이 맞히기 쉽게, 구슬이 많은 칸이 구슬 수보다 더 잘 뽑히도록 해 두었어요.\n확률이 낮은 칸이 뽑히면 \"일부러 다른 수를 시험해 본다\"는 안내가 나와요.\nAI가 혼자 연습할 때는 구슬 수 그대로 뽑아요."],
+	["체험 뒤에 물어볼 질문", "1. AI는 처음부터 이기는 법을 알고 있었나요?\n2. AI가 진 다음에 그 칸의 구슬은 어떻게 됐나요?\n3. 졌는데도 구슬을 넣어 주면 AI는 어떻게 될까요?"],
+	["AI 키우기 대회 (2분쯤)", "연습 600판을 세 친구에게 나눠 주는 계획을 세워요.\n그 계획으로 키운 AI 5대의 평균 점수가 나와요. 가장 높은 점수는 900점이에요.\n배울 점: 무엇으로 연습했느냐에 따라 실력이 달라져요.\n아주 잘 두는 친구하고만 연습하면 오히려 점수가 낮아요."],
+	["운영할 때", "60초 동안 아무도 누르지 않으면 첫 화면으로 돌아가요.\n첫 화면을 20초 두면 순위표와 1961년 이야기가 저절로 나와요.\n중학생은 \"확률(%) 숫자 보이기\"를 켜면 졸업장에 상태·행동·보상이 붙어요."],
+	["기록", "이름 없는 기록만 이 컴퓨터에 남아요 (걸린 시간, 승패, 누른 횟수).\n메뉴의 \"체험 통계\"에서 볼 수 있고, 거기서 지울 수 있어요."],
 ]
 
 
@@ -478,3 +479,57 @@ func _open_guide() -> void:
 	back.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	back.pressed.connect(_open_menu)
 	vbox.add_child(back)
+
+
+# ---------- 체험 통계 (이름 없는 기록의 합계) ----------
+
+## today_only면 오늘 기록만, 아니면 이 컴퓨터에 남은 모든 날의 기록
+func _open_stats(today_only: bool) -> void:
+	var R := Kit.R
+	var vbox := _card("체험 통계")
+	var sessions := Stats.load_sessions(Today.date_key() if today_only else "")
+	var tabs := HBoxContainer.new()
+	tabs.add_theme_constant_override("separation", int(R * 0.6))
+	for pair in [["오늘", true], ["모든 날", false]]:
+		var b := Kit.button(pair[0], "primary" if pair[1] == today_only else "soft", true)
+		b.pressed.connect(_open_stats.bind(pair[1]))
+		tabs.add_child(b)
+	vbox.add_child(tabs)
+	_note(vbox, "이름과 얼굴은 기록하지 않아요. 아래는 모두 합계와 가운데 값이에요. 체험 %d번." % sessions.size(), 0.9)
+	var scroll := ScrollContainer.new()
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	var room: float = _root.size.y if _root.size.y > 0.0 else 1080.0
+	scroll.custom_minimum_size = Vector2(R * 46, minf(R * 22, room - R * 19))
+	vbox.add_child(scroll)
+	var body := VBoxContainer.new()
+	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	body.add_theme_constant_override("separation", int(R * 0.3))
+	scroll.add_child(body)
+	for part in Stats.summary(sessions):
+		body.add_child(Kit.label(part[0], Kit.F_BOLD, R * 1.15, Kit.RED_INK))
+		for row in part[1]:
+			var h := HBoxContainer.new()
+			h.custom_minimum_size.x = R * 44
+			var name := Kit.label(row[0], Kit.F_BODY, R * 0.95, Kit.INK_SOFT)
+			name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			h.add_child(name)
+			h.add_child(Kit.label(row[1], Kit.F_BOLD, R * 0.95, Kit.INK, HORIZONTAL_ALIGNMENT_RIGHT))
+			body.add_child(h)
+		var gap := Control.new()
+		gap.custom_minimum_size.y = R * 0.5
+		body.add_child(gap)
+	var row2 := HBoxContainer.new()
+	row2.alignment = BoxContainer.ALIGNMENT_CENTER
+	row2.add_theme_constant_override("separation", int(R * 0.8))
+	var back := Kit.button("메뉴로 돌아가기", "soft", true)
+	back.pressed.connect(_open_menu)
+	row2.add_child(back)
+	var wipe := Kit.button("체험 기록 모두 지우기", "danger", true)
+	wipe.pressed.connect(_open_confirm.bind("이 컴퓨터에 남은 체험 기록을 모두 지울까요? AI 구슬과 순위는 그대로예요.", "지우기", _clear_stats))
+	row2.add_child(wipe)
+	vbox.add_child(row2)
+
+
+func _clear_stats() -> void:
+	Stats.clear_all()
+	toast("체험 기록을 지웠어요.")

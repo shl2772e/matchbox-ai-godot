@@ -1,7 +1,8 @@
 class_name GameScreen
 extends ScreenBase
 ## 새 흐름의 놀이 한 판. 판이 하나뿐이다: AI의 구슬을 서랍이 아니라 틱택토 판의 빈칸에 바로 보여 준다.
-##   AI 차례: 빈칸마다 구슬이 나타남(0.4초) → 기계 집게가 구슬 하나를 집음(0.35초) → 그 칸에 ○ (1.2초 안, 뜸 들이기 없음)
+##   AI 차례: 빈칸마다 구슬과 %가 나타남 → 기계 집게가 구슬 하나를 집음 → 그 칸에 ○.
+##     1·2단계(개념을 익히는 판)는 읽을 시간을 넉넉히 준다(구슬 1.6초 + 집게 0.7초). 졸업 시험은 빠르게(0.4초 + 0.35초)
 ##   판이 끝나면 같은 판 위에서 AI가 둔 칸마다 구슬이 늘거나 준다 (상과 벌).
 ## 놀이 중에는 글을 거의 띄우지 않는다. 설명은 세 판 묶음이 끝난 뒤 ExplainScreen이 한다.
 ##
@@ -14,15 +15,18 @@ extends ScreenBase
 signal round_end(result: Dictionary)
 
 const OPEN_S := 0.4
+const OPEN_SLOW_S := 1.6
+const PICK_SLOW_S := 0.7
+const EXPLORE_LINE := "이번에는 일부러 다른 칸을 골랐어요. AI는 가끔 다른 수도 시험해 봐요."
 const PICK_S := 0.35
 const END_S := 1.1
 const PREDICT_WAIT := 4.0
 const SET_NAMES := ["1단계", "2단계", "졸업 시험"]
 
 const TEACH_HAND := {
-	"kid": "AI가 졌어요. AI가 둔 칸을 눌러 구슬을 1개씩 빼요. 이게 벌이에요.",
-	"ai": "AI가 이겼어요. AI가 둔 칸을 눌러 구슬을 3개씩 넣어요. 이게 상이에요.",
-	"draw": "비겼어요. AI가 둔 칸을 눌러 구슬을 1개씩 넣어요. 작은 상이에요.",
+	"kid": "AI가 졌어요. AI가 둔 칸을 눌러 구슬을 1개씩 빼요.",
+	"ai": "AI가 이겼어요. AI가 둔 칸을 눌러 구슬을 3개씩 넣어요.",
+	"draw": "비겼어요. AI가 둔 칸을 눌러 구슬을 1개씩 넣어요.",
 }
 const TEACH_AUTO := {
 	"kid": "AI가 졌어요. AI가 둔 칸마다 구슬이 1개씩 줄어요.",
@@ -52,6 +56,10 @@ var _rng := SeededRng.for_game()
 var _predicted := false
 var _asked_now := false
 var _keep_line := false
+var _explored := 0
+## 내 차례가 시작된 때와 한 수마다 걸린 시간(ms). 체험 통계에 쓴다 (이름 없이)
+var _turn_t := 0
+var _kid_ms := []
 var _predict_tw: Tween
 var _predict := {"offered": false, "answered": false, "guess_max": false, "hit": false}
 var _teach_info := {"manual": 0, "total": 0}
@@ -161,9 +169,9 @@ func enter() -> void:
 			line = "AI는 구슬이 많은 칸을 더 잘 골라요." if game_i == 1 else ""
 			_machine.mood = "lost"
 		2:
-			line = "AI가 집을 칸을 맞혀 보고, 끝나면 내 손으로 상과 벌을 줘요." if game_i == 1 else ""
+			line = "AI가 고를 칸을 맞혀 보고, 내 손으로 상과 벌을 줘요." if game_i == 1 else ""
 		_:
-			line = "졸업 시험이에요. 혼자 %d판을 연습한 AI예요. 비기기만 해도 잘한 거예요." % trained if game_i == 1 else ""
+			line = "졸업 시험이에요. 비기기만 해도 잘한 거예요." if game_i == 1 else ""
 	_say(line)
 	var wait := 0.9
 	if game_i == 1 and set_i > 1:
@@ -199,10 +207,10 @@ func _ai_turn(b: Array) -> void:
 	phase = "ai"
 	_view.locked = true
 	_view.active = false
-	# 학생과 둘 때는 구슬이 가장 많은 칸을 고른다 (혼자 연습할 때만 구슬 수에 비례해 아무거나)
-	var c := Menace.choose_move(brain, b, _rng, true)
+	# 학생과 둘 때는 구슬이 많은 칸으로 쏠리게 고른다 (화면의 %가 그 확률이다). 혼자 연습할 때만 구슬 수에 비례
+	var c := Menace.choose_move(brain, b, _rng, Menace.FOCUS_KID)
 	if c.kind == "forced":
-		_say("마지막 한 칸이라 구슬을 집지 않고 바로 둬요.")
+		_say("마지막 한 칸이라 바로 둬요.")
 		later(0.7, _place_ai.bind(b, c.cell, {}))
 		return
 	# 왼쪽 이름표가 지금 판과 같은 모양의 성냥갑으로 바뀌고, 판과 이름표에 같은 테두리가 켜진다
@@ -211,22 +219,22 @@ func _ai_turn(b: Array) -> void:
 	_tag.t = 1.0
 	create_tween().tween_property(_tag, "t", 0.0, 0.7).set_delay(0.45)
 	_view.flash_match()
-	_view.show_beads(c.beads)
+	_view.show_beads(c.beads, c.chances)
 	_machine.working = true
 	if _machine.mood != "lost":
 		_machine.mood = "think"
 	Sfx.open()
 	if c.kind == "resign":
-		_say("빈칸 어디에도 구슬이 없어요. 어떻게 둬도 질 것 같대요. AI가 기권했어요.")
+		_say("어느 칸에도 구슬이 없어요. AI가 기권했어요.")
 		_machine.working = false
 		_machine.mood = "resign"
 		later(2.6, _finish.bind(b, "kid", true))
 		return
 	if _should_predict(c.beads, b):
 		_predicted = true
-		later(OPEN_S, _ask_predict.bind(b, c.move))
+		later(_open_s(), _ask_predict.bind(b, c.move, c.top))
 		return
-	later(OPEN_S, _pick.bind(b, c.move))
+	later(_open_s(), _pick.bind(b, c.move, c.top))
 
 
 ## 맞혀 보기는 2단계에서 한 판에 한 번. 칸마다 구슬 수가 다를 때 묻는다 (다 같으면 읽을 것이 없다).
@@ -243,12 +251,13 @@ func _should_predict(beads: Array, b: Array) -> bool:
 	return hi > lo or not _moves.is_empty()
 
 
-func _ask_predict(b: Array, move: Dictionary) -> void:
+func _ask_predict(b: Array, move: Dictionary, top: bool) -> void:
 	phase = "predict"
 	_predict.offered = true
+	_turn_t = Time.get_ticks_msec()
 	_asked_now = true
-	_say("AI가 어느 칸을 고를까요? 한 칸을 눌러 맞혀 봐요.")
-	_view.set_meta("pending", [b, move])
+	_say("AI가 어느 칸을 고를까요? 한 칸을 눌러 봐요.")
+	_view.set_meta("pending", [b, move, top])
 	_view.guessing = true
 	_predict_tw = create_tween()
 	_predict_tw.tween_interval(PREDICT_WAIT)
@@ -268,28 +277,43 @@ func _on_guess_tap(cell: int) -> void:
 		Sfx.tap()
 		_view.guess = cell
 		_predict.answered = true
+		_predict.ms = Time.get_ticks_msec() - _turn_t
 		_predict.guess_max = _view.beads[cell] == _view.beads.max()
 		_predict.hit = cell == move.cell
-	_pick(pending[0], move)
+	_pick(pending[0], move, pending[2])
 
 
 ## 기계 집게가 내려와 구슬 하나를 집는다
-func _pick(b: Array, move: Dictionary) -> void:
+func _pick(b: Array, move: Dictionary, top: bool) -> void:
 	var cell: int = move.cell
+	var pick_s := PICK_SLOW_S if set_i <= 2 else PICK_S
 	_view.bead_pick = cell
-	create_tween().tween_property(_view, "pick_t", 1.0, PICK_S - 0.05).from(0.0)
-	if _asked_now:
+	create_tween().tween_property(_view, "pick_t", 1.0, pick_s - 0.05).from(0.0)
+	var hold := 0.0
+	if not top:
+		# 확률이 가장 높지 않은 칸을 골랐다: 헷갈리지 않게 까닭을 말하고 읽을 시간을 준다
+		_explored += 1
+		_asked_now = false
+		_say(EXPLORE_LINE)
+		_keep_line = true
+		hold = 1.6
+	elif _asked_now:
 		_asked_now = false
 		# 맞혀 본 차례: 맞고 틀림을 크게 알리지 않고 사실만 말한다
-		var top: int = _view.beads.max()
+		var most: int = _view.beads.max()
 		var line := "AI는 구슬이 많은 칸을 골랐어요."
-		if _view.beads.count(top) > 1:
+		if _view.beads.count(most) > 1:
 			line = "구슬 수가 같은 칸이 여럿이라 그 가운데 하나를 골랐어요."
 		if _view.guess == cell:
 			line += " 내가 고른 칸이에요."
 		_say(line)
 		_keep_line = true
-	later(PICK_S, _place_ai.bind(b, cell, move))
+	later(pick_s + hold, _place_ai.bind(b, cell, move))
+
+
+## 구슬과 %가 나타나서 집게가 내려오기까지. 개념을 익히는 1·2단계에서는 읽을 시간을 넉넉히 준다
+func _open_s() -> float:
+	return OPEN_SLOW_S if set_i <= 2 else OPEN_S
 
 
 func _place_ai(b: Array, cell: int, move: Dictionary) -> void:
@@ -308,6 +332,7 @@ func _place_ai(b: Array, cell: int, move: Dictionary) -> void:
 		_finish(nb, o)
 		return
 	phase = "kid"
+	_turn_t = Time.get_ticks_msec()
 	_view.locked = false
 	_view.active = true
 	# 맞혀 본 직후에는 구슬 수를 말한 줄을 그대로 둔다 (읽을 시간)
@@ -323,6 +348,7 @@ func _place_ai(b: Array, cell: int, move: Dictionary) -> void:
 func _kid_tap(cell: int) -> void:
 	if phase != "kid":
 		return
+	_kid_ms.append(Time.get_ticks_msec() - _turn_t)
 	var nb := Ttt.place(_board, cell, Ttt.KID)
 	_board = nb
 	_view.locked = true
@@ -348,7 +374,7 @@ func _finish(b: Array, o: String, resigned := false) -> void:
 	if not resigned:
 		_say({"kid": "내가 이겼어요.", "ai": "AI가 이겼어요.", "draw": "비겼어요."}[o])
 		_machine.mood = {"kid": "sad", "ai": "happy", "draw": "calm"}[o]
-	_end = {"outcome": o, "moves": _moves, "resigned": resigned, "predict": _predict, "teach": _teach_info}
+	_end = {"outcome": o, "moves": _moves, "resigned": resigned, "predict": _predict, "teach": _teach_info, "explored": _explored, "kid_ms": _kid_ms}
 	if _moves.is_empty():
 		later(END_S, round_end.emit.bind(_end))
 	else:

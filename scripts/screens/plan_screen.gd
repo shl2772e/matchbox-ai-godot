@@ -8,9 +8,9 @@ signal start(counts: Array)
 signal home
 
 const TRAITS := {
-	"random": "어디에 둘지 아무도 몰라요",
-	"careful": "이길 수 있으면 이기고, 막을 수 있으면 막아요",
-	"perfect": "절대 지지 않고, 함정도 파요",
+	"random": "아무 데나 둬요",
+	"careful": "이기고 막을 줄 알아요",
+	"perfect": "절대 지지 않아요",
 }
 const COLORS := {"random": Kit.MUSTARD, "careful": Kit.TEAL, "perfect": Kit.RED}
 
@@ -31,7 +31,7 @@ func build() -> void:
 	var R := Kit.R
 	_title = Kit.label("AI 키우기 대회", Kit.F_TITLE, R * 2.6, Kit.NAVY, HORIZONTAL_ALIGNMENT_CENTER)
 	add_child(_title)
-	_line = Kit.label("새내기 AI가 %d판을 연습해요. 누구와 연습할지 내가 정해요. 칸 %d개를 세 친구에게 나눠 주세요." % [SelfPlay.CONTEST_GAMES, SelfPlay.CONTEST_SLOTS], Kit.F_BODY, R * 1.3, Kit.INK, HORIZONTAL_ALIGNMENT_CENTER, true)
+	_line = Kit.label("AI가 누구와 연습할까요? 칸 %d개를 세 친구에게 나눠 줘요." % SelfPlay.CONTEST_SLOTS, Kit.F_BODY, R * 1.3, Kit.INK, HORIZONTAL_ALIGNMENT_CENTER, true)
 	add_child(_line)
 	for i in 3:
 		var d := Drawn.new(_paint_card.bind(i))
@@ -152,7 +152,7 @@ func _paint_card(ci: Drawn, i: int) -> void:
 	ci.draw_style_box(hs, head)
 	Kit.text(ci, Kit.F_TITLE, minf(R * 1.3, r.size.x * 0.075), SelfPlay.CONTEST_NAMES[kind], head, Kit.CREAM)
 	Kit.text(ci, Kit.F_BODY, minf(R * 1.0, r.size.x * 0.052), TRAITS[kind], Rect2(0, R * 3.0, r.size.x, R * 1.6), Kit.INK_SOFT)
-	# 네모 6개: 이 친구에게 준 칸만 색이 찬다
+	# 칸 6개: 이 친구에게 준 칸만 찬다
 	var n: int = counts[i]
 	var sq := R * 1.9
 	var sgap := R * 0.4
@@ -160,6 +160,9 @@ func _paint_card(ci: Drawn, i: int) -> void:
 	var sx := (r.size.x - sw) / 2
 	for k in SelfPlay.CONTEST_SLOTS:
 		var cell := Rect2(sx + k * (sq + sgap), R * 5.4, sq, sq)
-		Kit.rrect(ci, cell, col if k < n else Kit.TRAY, R * 0.3)
+		Kit.rrect(ci, cell, Kit.TRAY, R * 0.3)
+		if k < n:
+			# 순위표와 같은 표시 (색 + 모양)
+			RankBoard.plan_mark(ci, cell.grow(-R * 0.12), i)
 	var per := SelfPlay.CONTEST_GAMES / SelfPlay.CONTEST_SLOTS
 	Kit.text(ci, Kit.F_TITLE, R * 2.2, "%d판" % (n * per), Rect2(0, R * 8.0, r.size.x, R * 2.8), Kit.INK)

@@ -248,7 +248,10 @@ func _teacher_shots(t: TeacherLayer) -> void:
 	elif _wait > 4.2 and not _shots.has("0-teacher-guide"):
 		t._open_guide()
 		_shot("0-teacher-guide")
-	elif _wait > 5.0 and _shots.has("0-teacher-guide"):
+	elif _wait > 5.0 and not _shots.has("0-teacher-stats"):
+		t._open_stats(false)
+		_shot("0-teacher-stats")
+	elif _wait > 5.8 and _shots.has("0-teacher-stats"):
 		t._close()
 		t._unlocked_until = 0
 		_shots["0-teacher-done"] = true

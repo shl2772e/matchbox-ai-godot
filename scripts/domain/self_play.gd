@@ -56,11 +56,11 @@ static func kid_move(opp: String, b: Array, rng: SeededRng) -> int:
 
 
 ## AI와 상대가 한 판을 둔다. learn_it이면 배운다
-static func play_one(brain: Dictionary, opp: String, rng: SeededRng, learn_it := true, greedy := false) -> String:
+static func play_one(brain: Dictionary, opp: String, rng: SeededRng, learn_it := true, focus := 1.0) -> String:
 	var b := Ttt.empty_board()
 	var moves := []
 	while true:
-		var c := Menace.choose_move(brain, b, rng, greedy)
+		var c := Menace.choose_move(brain, b, rng, focus)
 		if c.kind == "resign":
 			if learn_it:
 				Menace.learn(brain, moves, "kid")
@@ -95,14 +95,14 @@ static func skilled_kid(b: Array, rng: SeededRng, p: float) -> int:
 
 
 ## AI와 실력 p인 학생이 배우지 않고 n판을 둔 결과 {"kid", "draw", "ai"} (난이도 시뮬레이션)
-static func evaluate(brain: Dictionary, p: float, n: int, rng: SeededRng, greedy := true) -> Dictionary:
+static func evaluate(brain: Dictionary, p: float, n: int, rng: SeededRng, focus := Menace.FOCUS_KID) -> Dictionary:
 	var out := {"kid": 0, "draw": 0, "ai": 0}
 	for i in n:
 		var work := Menace.clone_brain(brain)
 		var b := Ttt.empty_board()
 		var o := ""
 		while o == "":
-			var c := Menace.choose_move(work, b, rng, greedy)
+			var c := Menace.choose_move(work, b, rng, focus)
 			if c.kind == "resign":
 				o = "kid"
 				break
@@ -179,11 +179,13 @@ const CONTEST_EXAM_EACH := 100
 ## 운을 줄이려고 같은 계획으로 AI를 여러 대 키워 평균을 낸다. 점수 흔들림은 시험이 아니라 연습에서 온다:
 ## 같은 AI를 다시 시험하면 ±9점, 같은 계획으로 새로 키우면 ±40점. 다섯 대 평균이면 ±18점쯤으로 준다
 const CONTEST_TEAM := 5
+## 대회 시험에서는 구슬이 가장 많은 칸을 둔다 (쏠림을 아주 크게: 가장 많은 칸들 가운데 아무거나)
+const CONTEST_FOCUS := 1000.0
 const CONTEST_KINDS := ["random", "careful", "perfect"]
 const CONTEST_NAMES := {"random": "아무 데나 두는 친구", "careful": "막을 줄 아는 친구", "perfect": "아주 잘 두는 친구"}
 
 
 ## 시험 한 판 (배우지 않고, 구슬이 가장 많은 칸을 고른다). 점수를 돌려준다: 이김 3, 비김 1, 짐 0
 static func contest_point(brain: Dictionary, kind: String, rng: SeededRng) -> int:
-	var o := play_one(brain, kind, rng, false, true)
+	var o := play_one(brain, kind, rng, false, CONTEST_FOCUS)
 	return 3 if o == "ai" else (1 if o == "draw" else 0)

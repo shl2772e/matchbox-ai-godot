@@ -36,7 +36,7 @@ func build() -> void:
 	var R := Kit.R
 	_badge = Drawn.new(_paint_badge)
 	add_child(_badge)
-	_lead = Kit.label("이 AI는 이기는 법을 모른 채 태어났어요. 오늘 내가 가르쳐 볼까요?", Kit.F_BODY, R * 1.35, Kit.INK, HORIZONTAL_ALIGNMENT_LEFT, true)
+	_lead = Kit.label("이기는 법을 모르는 AI예요. 내가 가르쳐 볼까요?", Kit.F_BODY, R * 1.35, Kit.INK, HORIZONTAL_ALIGNMENT_LEFT, true)
 	add_child(_lead)
 	_teach = _menu_button("AI 가르치기", "AI는 어떻게 배울까요?", Kit.RED, Kit.RED_DARK)
 	_teach.pressed.connect(_pick.bind(start))

@@ -4,7 +4,7 @@ extends Control
 ## active(내 차례)면 테두리가 숨 쉬듯 밝아지고, 잠시 뒤 손가락이 빈칸을 톡 두드리는 안내가 나온다.
 ##
 ## 새 흐름(GameScreen)에서는 서랍을 따로 그리지 않고 AI의 구슬을 이 판의 빈칸에 바로 보여 준다:
-##   show_beads() 빈칸마다 구슬과 "몇 개, 10번 중 몇 번" → bead_pick/pick_t 기계 집게가 구슬 하나를 집는다 → put() 그 칸에 ○
+##   show_beads() 빈칸마다 구슬과 뽑힐 확률(%) → bead_pick/pick_t 기계 집게가 구슬 하나를 집는다 → put() 그 칸에 ○
 ##   guessing 맞혀 보기(빈칸을 누르면 guess_tapped), start_teach() 판이 끝난 뒤 AI가 둔 칸마다 구슬이 늘거나 준다
 
 signal cell_tapped(cell: int)
@@ -265,7 +265,8 @@ const MAX_BEADS := 12
 
 ## 빈칸마다 든 구슬 수 9개 (비어 있으면 안 보임)
 var beads: Array = []
-## 켜면 "10번 중 몇 번" 대신 %로 적는다 (중등)
+## 칸마다 실제로 뽑힐 확률 (합 1). 화면의 %는 이것을 그대로 적는다
+var chances: Array = []
 var percent := false
 var beads_a := 0.0:
 	set(v):
@@ -290,8 +291,9 @@ var guess := -1:
 var _anim_t := 0.0
 
 
-func show_beads(counts: Array) -> void:
+func show_beads(counts: Array, probs: Array = []) -> void:
 	beads = counts.duplicate()
+	chances = probs if probs.size() == 9 else Menace.chances(counts)
 	guess = -1
 	bead_pick = -1
 	pick_t = 0.0
@@ -317,14 +319,11 @@ func _cell_bead_pos(i: int, k: int, n: int) -> Vector2:
 	return Vector2(r.get_center().x + (k % 4 - (in_row - 1) / 2.0) * step, r.position.y + cs * 0.17 + row * step) + j
 
 
-## 그 칸이 나올 확률 (구슬 수 ÷ 전체 구슬 수)
+## 그 칸이 뽑힐 확률 (학생과 둘 때는 구슬이 많은 칸으로 쏠린 실제 확률)
 func _chance_text(i: int) -> String:
-	var total := 0
-	for n in beads:
-		total += n
-	if total == 0:
+	if chances.size() != 9:
 		return "0%"
-	return "%d%%" % roundi(beads[i] * 100.0 / total)
+	return "%d%%" % roundi(chances[i] * 100.0)
 
 
 func _draw_cell_beads(i: int) -> void:
@@ -535,6 +534,10 @@ func _draw_teach() -> void:
 		Kit.text(self, Kit.F_TITLE, fs, right, Rect2(x0 + lw + arrow, fy, rw + cs * 0.1, cs * 0.2), col, HORIZONTAL_ALIGNMENT_LEFT)
 	for f in flying:
 		Kit.bead(self, f[0], br * 1.1, f[1])
+	# 2초 동안 누르지 않으면 손가락이 아직 안 누른 칸을 두드려 보인다 (어느 칸을 눌러야 하는지)
+	var todo_k := _teach_at.find(-1.0)
+	if _teach_by_hand and todo_k >= 0 and _teach_idle > 2.0:
+		_draw_hand(cell_rect(_teach[todo_k].cell).get_center() + Vector2(0, cs * 0.12), cs, fmod(_teach_idle - 2.0, HINT_CYCLE))
 
 
 static func _arc(from: Vector2, to: Vector2, p: float) -> Vector2:

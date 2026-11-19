@@ -23,6 +23,8 @@ var _train_left := 0
 var _kind_i := 0
 var _exam_left := SelfPlay.CONTEST_EXAM_EACH
 var _points := 0
+## AI 한 대마다 받은 점수
+var _ai_points := [0]
 var _games_done := 0
 var _games_all := 0
 var _tally := {}
@@ -59,7 +61,7 @@ func build() -> void:
 	var R := Kit.R
 	_title = Kit.label("시험을 보고 있어요", Kit.F_TITLE, R * 2.4, Kit.NAVY, HORIZONTAL_ALIGNMENT_CENTER)
 	add_child(_title)
-	_sub = Kit.label("같은 계획으로 키운 AI %d대가 시험관 세 명과 %d판씩 둬요. 이기면 3점, 비기면 1점이에요." % [SelfPlay.CONTEST_TEAM, SelfPlay.CONTEST_EXAM_EACH], Kit.F_BODY, R * 1.25, Kit.INK, HORIZONTAL_ALIGNMENT_CENTER, true)
+	_sub = Kit.label("내 계획으로 키운 AI %d대가 시험을 봐요. 이기면 3점, 비기면 1점." % SelfPlay.CONTEST_TEAM, Kit.F_BODY, R * 1.25, Kit.INK, HORIZONTAL_ALIGNMENT_CENTER, true)
 	add_child(_sub)
 	_tally_view = Drawn.new(_paint_tally)
 	add_child(_tally_view)
@@ -78,7 +80,7 @@ func build() -> void:
 	_save = Kit.button("순위표에 올리기", "primary", true)
 	_save.pressed.connect(_submit.bind(true))
 	add_child(_save)
-	_skip = Kit.button("이름 없이 넘어가기", "soft")
+	_skip = Kit.button("별명 없이 넘어가기", "soft")
 	_skip.pressed.connect(_submit.bind(false))
 	add_child(_skip)
 	_board = Drawn.new(_paint_board)
@@ -112,7 +114,7 @@ func _show_phase() -> void:
 
 
 func _on_name(t: String) -> void:
-	_name.text = t if t != "" else "이름을 적어요"
+	_name.text = t if t != "" else "별명을 적어요"
 	_name.label_settings.font_color = Kit.INK if t != "" else Kit.INK_SOFT
 	_save.disabled = t == ""
 	_save.modulate.a = 0.45 if t == "" else 1.0
@@ -194,6 +196,8 @@ func _step() -> bool:
 		if _kind_i >= 3:
 			# 다음 AI: 같은 계획으로 처음부터 새로 키운다
 			_ai += 1
+			if _ai < SelfPlay.CONTEST_TEAM:
+				_ai_points.append(0)
 			if _ai >= SelfPlay.CONTEST_TEAM:
 				return false
 			_kind_i = 0
@@ -203,6 +207,7 @@ func _step() -> bool:
 	var kind: String = SelfPlay.CONTEST_KINDS[_kind_i]
 	var p := SelfPlay.contest_point(_brain, kind, _rng)
 	_points += p
+	_ai_points[_ai] += p
 	_tally[kind]["ai" if p == 3 else ("draw" if p == 1 else "kid")] += 1
 	_exam_left -= 1
 	_games_done += 1
@@ -213,12 +218,17 @@ func _finish_exam() -> void:
 	score = roundi(_points / float(SelfPlay.CONTEST_TEAM))
 	phase = "score"
 	Kit.set_text(_title, "내 AI의 점수")
-	Kit.set_text(_sub, "AI %d대의 평균 점수예요. 이긴 판 3점, 비긴 판 1점, 가장 높은 점수는 900점이에요." % SelfPlay.CONTEST_TEAM)
+	var each := []
+	for v in _ai_points:
+		each.append(str(v))
+	# 같은 계획으로 키워도 AI마다 점수가 다르다는 것을 보여 준다 (그래서 평균을 낸다)
+	Kit.set_text(_sub, "AI %d대의 점수 %s의 평균이에요. 가장 높은 점수는 900점." % [SelfPlay.CONTEST_TEAM, ", ".join(each)])
 	var place := 1
 	for e in RankBoard.today(ranking):
 		if e.score >= score:
 			place += 1
-	_rank.text = "오늘 %d등이에요" % place
+	# 순위표에는 10등까지 나온다. 그 밖이면 등수를 말하지 않는다
+	_rank.text = "오늘 %d등이에요" % place if place <= 10 else ""
 	Sfx.grad()
 	scored.emit(score)
 	_show_phase()

@@ -92,10 +92,33 @@ static func _sum(a: Array) -> int:
 	return s
 
 
+## 학생과 둘 때 쓰는 쏠림 정도. 칸이 뽑힐 확률을 (구슬 수)의 FOCUS_KID 제곱에 비례하게 한다:
+## 구슬이 많은 칸이 거의 언제나 뽑혀 학생이 맞히기 쉽고, 가끔은 다른 칸도 뽑힌다 (일부러 다른 수를 시험해 보기).
+## 화면의 %는 이 확률을 그대로 보여 준다 (chances). 값은 tests/sim_difficulty.gd로 정한다
+const FOCUS_KID := 4.0
+
+
+## 칸마다 뽑힐 확률(합 1). focus가 1이면 구슬 수에 비례, 클수록 구슬이 많은 칸으로 쏠린다
+static func chances(beads: Array, focus := 1.0) -> Array:
+	var top := 0
+	for n in beads:
+		top = maxi(top, n)
+	var out := []
+	var total := 0.0
+	for n in beads:
+		var w := pow(float(n) / top, focus) if top > 0 and n > 0 else 0.0
+		out.append(w)
+		total += w
+	if total > 0.0:
+		for i in out.size():
+			out[i] /= total
+	return out
+
+
 ## AI가 둘 칸을 고른다. kind는 "move" / "forced" / "resign".
-## move = {key, canon, cell, board}
-## greedy면 구슬이 가장 많은 칸을 고른다 (학생과 둘 때). 아니면 구슬 수에 비례해 아무거나 하나 (혼자 연습할 때: 여러 수를 시험해 본다)
-static func choose_move(brain: Dictionary, b: Array, rng: SeededRng, greedy := false) -> Dictionary:
+## move = {key, canon, cell, board}. chances는 지금 판 방향의 칸별 확률, top은 가장 확률이 높은 칸(들 가운데 하나)을 골랐는지.
+## focus가 1이면 구슬 수에 비례해 아무거나 하나 (혼자 연습할 때, 원래 규칙). 학생과 둘 때는 FOCUS_KID
+static func choose_move(brain: Dictionary, b: Array, rng: SeededRng, focus := 1.0) -> Dictionary:
 	var empties := Ttt.empty_cells(b)
 	if empties.size() == 1:
 		return {"kind": "forced", "cell": empties[0]}
@@ -107,31 +130,34 @@ static func choose_move(brain: Dictionary, b: Array, rng: SeededRng, greedy := f
 		total = _sum(box.beads)
 	var shown := beads_on_board(brain, b)
 	if total == 0:
-		return {"kind": "resign", "beads": shown}
-	var r := rng.next() * total
+		return {"kind": "resign", "beads": shown, "chances": chances(shown)}
 	var canon := -1
-	if greedy:
-		# 학생과 둘 때: 구슬이 가장 많은 칸을 고른다 (여럿이면 그 가운데 아무거나)
-		var top := 0
-		for n in box.beads:
-			top = maxi(top, n)
-		var tops := []
+	if focus == 1.0:
+		# 웹 앱과 같은 난수 수열을 쓰도록 정수 구슬 수로 센다
+		var r := rng.next() * total
 		for i in 9:
-			if box.beads[i] == top:
-				tops.append(i)
-		canon = tops[floori(r / total * tops.size()) % tops.size()]
-	for i in (9 if canon < 0 else 0):
-		r -= box.beads[i]
-		if r < 0:
-			canon = i
-			break
+			r -= box.beads[i]
+			if r < 0:
+				canon = i
+				break
+	else:
+		var ch := chances(box.beads, focus)
+		var r := rng.next()
+		for i in 9:
+			r -= ch[i]
+			if r < 0 and ch[i] > 0.0:
+				canon = i
+				break
 	if canon < 0:
 		for i in range(8, -1, -1):
 			if box.beads[i] > 0:
 				canon = i
 				break
+	var top := 0
+	for n in box.beads:
+		top = maxi(top, n)
 	var move := {"key": box.key, "canon": canon, "cell": box.sym[canon], "board": b.duplicate()}
-	return {"kind": "move", "move": move, "beads": shown}
+	return {"kind": "move", "move": move, "beads": shown, "chances": chances(shown, focus), "top": box.beads[canon] == top}
 
 
 ## 판이 끝난 뒤 배우기. 바뀐 내용(move + before, after)을 돌려준다

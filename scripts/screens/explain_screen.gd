@@ -35,14 +35,14 @@ func _init(k: String, beads: Array = [], games := 0, played_games := 0) -> void:
 func _texts() -> Array:
 	if kind == "pick":
 		return [
-			"AI는 생각하지 않아요. 칸마다 든 구슬을 보고 둬요. 구슬이 많은 칸일수록 더 잘 골라요.",
-			"판이 끝나면 구슬 수가 바뀌어요. AI가 이기면 3개 늘고, 비기면 1개 늘고, 지면 1개 줄어요.",
-			"그래서 이긴 수는 자주 두고, 진 수는 점점 안 두게 돼요. 이제 내 손으로 구슬을 넣고 빼 봐요.",
+			"AI는 구슬을 보고 둬요.",
+			"구슬이 많은 칸을 더 잘 골라요.",
+			"이기면 구슬이 늘고, 지면 줄어요.",
 		]
 	return [
 		_change_line(),
-		"구슬이 늘어난 칸은 더 잘 고르고, 줄어든 칸은 덜 골라요. 그래서 이긴 수는 자주 두고, 진 수는 점점 안 두게 돼요.",
-		"이 일을 아주 많이 하면 어떻게 될까요? 이제 AI가 혼자 %d판을 연습해요." % train_games,
+		"구슬이 늘어난 칸은 더 잘 골라요.",
+		"이제 AI가 혼자 %d판을 연습해요." % train_games,
 	]
 
 
@@ -55,21 +55,21 @@ func _change_line() -> String:
 	var a: int = START[best]
 	var b: int = now_beads[best]
 	if b > a:
-		return "지금까지 %d판을 두는 동안 %s 칸의 구슬이 %d개에서 %d개로 늘었어요." % [played, Ttt.CELL_NAMES[best], a, b]
+		return "%d판 만에 %s 칸 구슬이 %d개에서 %d개로 늘었어요." % [played, Ttt.CELL_NAMES[best], a, b]
 	if b < a:
-		return "지금까지 %d판을 두는 동안 %s 칸의 구슬이 %d개에서 %d개로 줄었어요." % [played, Ttt.CELL_NAMES[best], a, b]
-	return "지금까지 %d판을 두는 동안 AI의 구슬이 조금씩 바뀌었어요." % played
+		return "%d판 만에 %s 칸 구슬이 %d개에서 %d개로 줄었어요." % [played, Ttt.CELL_NAMES[best], a, b]
+	return "%d판을 두는 동안 구슬이 조금씩 바뀌었어요." % played
 
 
 func build() -> void:
 	var R := Kit.R
-	var title := "AI는 이렇게 둬요" if kind == "pick" else "내가 준 상과 벌로 AI가 달라졌어요"
+	var title := "AI는 이렇게 둬요" if kind == "pick" else "내가 준 상과 벌로 AI가 달라져요"
 	_title = Kit.label(title, Kit.F_TITLE, R * 2.4, Kit.NAVY, HORIZONTAL_ALIGNMENT_CENTER)
 	add_child(_title)
 	_art = Drawn.new(_paint_pick if kind == "pick" else _paint_change)
 	add_child(_art)
 	for s in _texts():
-		var l := Kit.label(s, Kit.F_BODY, R * 1.35, Kit.INK, HORIZONTAL_ALIGNMENT_LEFT, true)
+		var l := Kit.label(s, Kit.F_BODY, R * 1.6, Kit.INK, HORIZONTAL_ALIGNMENT_LEFT, true)
 		l.label_settings.line_spacing = R * 0.5
 		add_child(l)
 		_lines.append(l)
@@ -121,7 +121,7 @@ func _draw() -> void:
 	var R := Kit.R
 	for i in _lines.size():
 		var l := _lines[i]
-		var c := l.position + Vector2(-R * 1.3, R * 0.95)
+		var c := l.position + Vector2(-R * 1.3, R * 1.1)
 		draw_circle(c, R * 0.8, Kit.NAVY, true, -1.0, true)
 		Kit.text(self, Kit.F_TITLE, R * 0.95, str(i + 1), Rect2(c - Vector2(R, R * 0.75), Vector2(R * 2, R * 1.5)), Kit.CREAM)
 

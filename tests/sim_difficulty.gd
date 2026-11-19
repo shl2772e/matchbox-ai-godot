@@ -9,7 +9,7 @@ extends SceneTree
 func _eval_perfect(brain: Dictionary, n: int, rng: SeededRng) -> Dictionary:
 	var out := {"kid": 0, "draw": 0, "ai": 0}
 	for i in n:
-		out[SelfPlay.play_one(Menace.clone_brain(brain), "perfect", rng, false, true)] += 1
+		out[SelfPlay.play_one(Menace.clone_brain(brain), "perfect", rng, false, Menace.FOCUS_KID)] += 1
 	return out
 
 
