@@ -114,3 +114,38 @@ static func load_password() -> String:
 
 static func save_password(p: String) -> void:
 	write_safe(TEACHER, {"password": p})
+
+
+# ---------- AI 키우기 대회 순위 ----------
+## {"list": [{"name", "score", "plan": [아무 데나, 꼼꼼, 아주 잘], "date"}]} 점수 높은 순. 이 컴퓨터에만 남는다
+
+const RANKING := "user://ranking.json"
+const RANK_KEEP := 50
+
+
+static func load_ranking() -> Array:
+	var data: Variant = read_safe(RANKING)
+	var out := []
+	if typeof(data) == TYPE_DICTIONARY and typeof(data.get("list")) == TYPE_ARRAY:
+		for e in data.list:
+			if typeof(e) == TYPE_DICTIONARY and e.has("score"):
+				out.append({"name": str(e.get("name", "")), "score": int(e.score), "plan": Array(e.get("plan", [])), "date": str(e.get("date", ""))})
+	return out
+
+
+## 기록을 넣고 점수 순으로 정렬해 저장한다. 그 기록의 등수(1부터)를 돌려준다
+static func add_ranking(list: Array, entry: Dictionary) -> int:
+	var at := list.size()
+	for i in list.size():
+		if entry.score > list[i].score:
+			at = i
+			break
+	list.insert(at, entry)
+	while list.size() > RANK_KEEP:
+		list.pop_back()
+	write_safe(RANKING, {"list": list})
+	return at + 1
+
+
+static func clear_ranking() -> void:
+	write_safe(RANKING, {"list": []})

@@ -31,6 +31,10 @@ var teacher: TeacherLayer
 var session_brain: Dictionary
 var trained := 0
 ## 새 흐름: round_i가 단계(1~3), game_i가 그 단계의 몇 판째(1~SET_GAMES). _exam은 졸업 시험 세 판의 결과
+## AI 키우기 대회: 순위(저장됨), 이번 도전의 계획과 AI
+var ranking: Array = []
+var _contest_counts: Array = []
+var _contest_brain: Dictionary
 const SET_GAMES := 3
 var game_i := 1
 var _exam := {"kid": 0, "draw": 0, "ai": 0}
@@ -52,6 +56,7 @@ func _ready() -> void:
 		brain = SelfPlay.trained_brain("some")
 		Store.save_brain(brain)
 	today = Store.load_today()
+	ranking = Store.load_ranking()
 	resized.connect(_on_resized)
 	_last_touch = Time.get_ticks_msec()
 	_make_vignette()
@@ -63,6 +68,7 @@ func _ready() -> void:
 	teacher.level_picked.connect(_on_level_picked)
 	teacher.setting_changed.connect(_on_setting_changed)
 	teacher.clear_today.connect(_on_clear_today)
+	teacher.clear_ranking.connect(_on_clear_ranking)
 	add_child(teacher)
 	to_idle.call_deferred()
 	# 내보낸 실행 파일은 전체화면으로 시작한다 (편집기에서 실행할 때는 창)
@@ -175,19 +181,81 @@ func to_idle() -> void:
 	Telemetry.end("left")
 	_last_touch = Time.get_ticks_msec()
 	today = Today.roll(today)
-	var s := IdleScreen.new(today, settings.newflow)
+	var s := IdleScreen.new(today, settings.newflow, ranking)
 	s.start.connect(start_session)
+	s.contest.connect(start_contest)
+	s.story.connect(show_story)
 	_show(s)
 
 
-## 대기 화면의 소개 돌려 보기: 안내 4장이 한 장씩 넘어가고, 누르면 바로 체험을 시작한다
+## 첫 화면을 그대로 두면: 큰 순위표(10초) → 안내 4장이 한 장씩 → 첫 화면. 누르면 첫 화면으로 돌아간다
 func _show_attract() -> void:
+	_last_touch = Time.get_ticks_msec()
+	if RankBoard.today(ranking).is_empty():
+		_show_attract_story()
+		return
+	var s := RankScreen.new(ranking)
+	s.done.connect(_show_attract_story)
+	s.tapped.connect(to_idle)
+	_show(s)
+
+
+func _show_attract_story() -> void:
 	_last_touch = Time.get_ticks_msec()
 	var s := IntroScreen.new()
 	s.attract = true
 	s.done.connect(to_idle)
-	s.start.connect(start_session)
+	s.start.connect(to_idle)
 	_show(s)
+
+
+## 메뉴 3: 1961년 성냥갑 이야기 (안내 4장을 직접 넘기며 본다)
+func show_story() -> void:
+	var s := IntroScreen.new()
+	s.last_text = "처음으로"
+	s.done.connect(to_idle)
+	_show(s)
+
+
+# ---------- AI 키우기 대회 ----------
+
+## 메뉴 2: 연습 계획 세우기 → 계획대로 연습 → 시험과 점수 → 이름 적기 → 순위표
+func start_contest() -> void:
+	Telemetry.end("left")
+	Telemetry.begin({"flow": "contest"})
+	Telemetry.stage("plan")
+	var s := PlanScreen.new()
+	s.start.connect(_on_plan)
+	s.home.connect(to_idle)
+	_show(s)
+
+
+func _on_plan(counts: Array) -> void:
+	_contest_counts = counts
+	_contest_brain = Menace.new_brain()
+	var plan := []
+	for i in 3:
+		for n in int(counts[i]):
+			plan.append(SelfPlay.CONTEST_KINDS[i])
+	Telemetry.put("plan", counts)
+	Telemetry.stage("practice")
+	var s := TrainScreen.new(_contest_brain, plan)
+	s.done.connect(_on_contest_trained)
+	_show(s)
+
+
+func _on_contest_trained(_info: Dictionary) -> void:
+	Telemetry.stage("exam")
+	var s := ContestScreen.new(_contest_brain, _contest_counts, ranking)
+	s.scored.connect(_on_contest_score)
+	s.again.connect(start_contest)
+	s.home.connect(to_idle)
+	_show(s)
+
+
+func _on_contest_score(points: int) -> void:
+	Telemetry.put("score", points)
+	Telemetry.stage("name")
 
 
 func start_session() -> void:
@@ -339,6 +407,9 @@ func _on_grad_leave(where: String) -> void:
 	Telemetry.put("after", where)
 	Telemetry.end("grad")
 	if where == "again":
+		# 졸업장의 "AI 키우기 대회" 단추: 가르치기를 끝낸 학생이 바로 대회로 넘어간다
+		start_contest()
+	elif where == "retry":
 		start_session()
 	elif where == "more":
 		# 1961년 이야기 (사진과 출처는 이 화면에 있다). 다 보면 처음으로
@@ -380,5 +451,12 @@ func _on_setting_changed(key: String, value: Variant) -> void:
 func _on_clear_today() -> void:
 	today = Today.fresh()
 	Store.save_today(today)
+	if screen is IdleScreen:
+		to_idle()
+
+
+func _on_clear_ranking() -> void:
+	ranking.clear()
+	Store.clear_ranking()
 	if screen is IdleScreen:
 		to_idle()

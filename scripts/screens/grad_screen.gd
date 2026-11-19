@@ -130,7 +130,7 @@ func build() -> void:
 	_quiz_a = Kit.label("", Kit.F_BODY, R * 1.2, Kit.TEAL, HORIZONTAL_ALIGNMENT_CENTER, true)
 	_quiz_a.visible = false
 	_quiz.add_child(_quiz_a)
-	_again = Kit.button("한 번 더 하기", "soft", true)
+	_again = Kit.button("AI 키우기 대회", "soft", true)
 	_again.pressed.connect(_leave.bind(again))
 	add_child(_again)
 	_more = Kit.button("1961년 이야기 보기", "soft", true)

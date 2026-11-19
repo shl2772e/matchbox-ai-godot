@@ -109,6 +109,44 @@ func _init() -> void:
 	Telemetry.end("grad")
 	check(not Telemetry.active(), "기록 끝")
 
+	# 이름 자판: 낱자를 글자로 모으기
+	check(Hangul.compose(["ㅅ", "ㅓ", "ㅇ", "ㄴ", "ㅑ", "ㅇ"]) == "성냥", "한글 모으기 성냥")
+	check(Hangul.compose(["ㄱ", "ㅏ", "ㅂ", "ㅅ"]) == "값", "겹받침")
+	check(Hangul.compose(["ㄱ", "ㅏ", "ㅂ", "ㅅ", "ㅣ"]) == "갑시", "겹받침이 다음 글자로")
+	check(Hangul.compose(["ㅇ", "ㅗ", "ㅏ"]) == "와", "겹모음")
+	check(Hangul.compose(["ㅁ", "ㅣ", "ㄴ", "ㅅ", "ㅜ"]) == "민수", "받침 뒤 새 글자")
+	check(Hangul.compose(["ㄸ", "ㅏ", "ㄹ", "ㄱ", "ㅣ"]) == "딸기", "쌍자음 첫소리")
+	check(Hangul.compose([]) == "" and Hangul.compose(["ㄱ"]) == "ㄱ", "빈 것과 낱자 하나")
+	for ch in "ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎㅏㅐㅑㅒㅓㅔㅕㅖㅗㅛㅜㅠㅡㅣ":
+		check(load("res://assets/fonts/GowunBatang-Bold.ttf").has_char(ch.unicode_at(0)), "자판 글자가 글꼴에 있음 " + ch)
+
+	# AI 키우기 대회: 점수와 순위
+	var cb := Menace.new_brain()
+	var crng := SeededRng.new(11)
+	var pts := 0
+	for i in 60:
+		pts += SelfPlay.contest_point(cb, "random", crng)
+	check(pts >= 0 and pts <= 180, "대회 점수 범위")
+	var mixed_ai := Menace.new_brain()
+	var only_best := Menace.new_brain()
+	var mix := ["random", "careful", "careful", "careful", "careful", "perfect"]
+	for i in SelfPlay.CONTEST_GAMES:
+		SelfPlay.play_one(mixed_ai, mix[floori(crng.next() * 6)], crng)
+		SelfPlay.play_one(only_best, "perfect", crng)
+	var pm := 0
+	var pb := 0
+	for kind in SelfPlay.CONTEST_KINDS:
+		for i in 100:
+			pm += SelfPlay.contest_point(mixed_ai, kind, crng)
+			pb += SelfPlay.contest_point(only_best, kind, crng)
+	check(pm > pb, "섞어서 연습한 AI가 잘 두는 상대하고만 연습한 AI보다 점수가 높음 (%d > %d)" % [pm, pb])
+	Store.frozen = true
+	var rl := []
+	check(Store.add_ranking(rl, {"name": "가", "score": 500, "plan": [2, 2, 2], "date": "d"}) == 1, "순위 첫 기록")
+	check(Store.add_ranking(rl, {"name": "나", "score": 600, "plan": [1, 4, 1], "date": "d"}) == 1, "더 높은 점수는 1등")
+	check(Store.add_ranking(rl, {"name": "다", "score": 550, "plan": [0, 6, 0], "date": "d"}) == 2 and rl[2].name == "가", "가운데 점수는 2등")
+	Store.frozen = false
+
 	# 저장: 임시 파일 → .bak → 본 파일. 본 파일이 깨지면 .bak을 읽는다
 	var path := "user://test-store.json"
 	for suffix in ["", ".bak", ".tmp"]:

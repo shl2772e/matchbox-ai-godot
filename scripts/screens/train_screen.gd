@@ -10,7 +10,8 @@ extends ScreenBase
 
 signal done(info: Dictionary)
 
-const GAMES := SelfPlay.TRAIN_GAMES
+## 대회(연습 계획) 때는 판 수와 상대가 달라지므로 상수가 아니라 변수다
+var GAMES := SelfPlay.TRAIN_GAMES
 const OPPONENT := SelfPlay.TRAIN_OPPONENT
 ## 누르고 있으면 다 두는 데 걸리는 시간
 const HOLD_S := 10.0
@@ -19,6 +20,8 @@ const AUTO_S := 6.0
 const BUCKETS := 20
 
 var brain: Dictionary
+## AI 키우기 대회: 칸마다 고른 연습 상대 (비어 있으면 보통 빨리 감기). 판마다 이 가운데 하나와 둔다
+var plan: Array = []
 
 var _rng := SeededRng.for_game()
 var _played := 0
@@ -44,7 +47,11 @@ var _machine: MachineView
 var _button: Button
 
 
-func _init(b: Dictionary) -> void:
+func _init(b: Dictionary, contest_plan: Array = []) -> void:
+	plan = contest_plan
+	if not plan.is_empty():
+		GAMES = SelfPlay.CONTEST_GAMES
+		_auto = true
 	brain = b
 	for i in BUCKETS:
 		_buckets.append({"ai": 0, "draw": 0, "kid": 0})
@@ -56,11 +63,11 @@ func build() -> void:
 	var R := Kit.R
 	_brand = Drawn.new(PlayScreen.paint_brand)
 	add_child(_brand)
-	_stage = Kit.label("빨리 감기", Kit.F_LABEL, R * 1.3)
+	_stage = Kit.label("빨리 감기" if plan.is_empty() else "AI 키우기 대회", Kit.F_LABEL, R * 1.3)
 	add_child(_stage)
-	_title = Kit.label("AI가 혼자 연습해요", Kit.F_TITLE, R * 2.4, Kit.NAVY, HORIZONTAL_ALIGNMENT_CENTER)
+	_title = Kit.label("AI가 혼자 연습해요" if plan.is_empty() else "내 계획대로 연습하고 있어요", Kit.F_TITLE, R * 2.4, Kit.NAVY, HORIZONTAL_ALIGNMENT_CENTER)
 	add_child(_title)
-	_line = Kit.label("단추를 누르고 있으면 AI가 혼자 연습해요. 한 판이 끝날 때마다 스스로 구슬을 고쳐요.", Kit.F_BODY, R * 1.3, Kit.INK, HORIZONTAL_ALIGNMENT_CENTER, true)
+	_line = Kit.label("단추를 누르고 있으면 AI가 혼자 연습해요. 한 판이 끝날 때마다 스스로 구슬을 고쳐요." if plan.is_empty() else "AI가 내가 고른 친구들과 %d판을 연습해요. 한 판이 끝날 때마다 스스로 구슬을 고쳐요." % GAMES, Kit.F_BODY, R * 1.3, Kit.INK, HORIZONTAL_ALIGNMENT_CENTER, true)
 	add_child(_line)
 	_graph = Drawn.new(_paint_graph)
 	add_child(_graph)
@@ -68,7 +75,7 @@ func build() -> void:
 	add_child(_box)
 	_machine = MachineView.new()
 	add_child(_machine)
-	_button = Kit.button("꾹 누르고 있어요", "primary", true)
+	_button = Kit.button("꾹 누르고 있어요" if plan.is_empty() else "연습 중이에요", "primary", true)
 	_button.custom_minimum_size.x = R * 16
 	_button.button_down.connect(_on_down)
 	_button.button_up.connect(_on_up)
@@ -171,7 +178,7 @@ func _process(delta: float) -> void:
 	if running:
 		if _holding:
 			_held_ms += delta * 1000.0
-		_acc += delta * GAMES / HOLD_S
+		_acc += delta * GAMES / (HOLD_S if plan.is_empty() else 6.0)
 		while _acc >= 1.0 and _played < GAMES:
 			_acc -= 1.0
 			_play_one()
@@ -185,7 +192,8 @@ func _process(delta: float) -> void:
 
 
 func _play_one() -> void:
-	var o := SelfPlay.play_one(brain, OPPONENT, _rng)
+	var opp: String = OPPONENT if plan.is_empty() else plan[floori(_rng.next() * plan.size())]
+	var o := SelfPlay.play_one(brain, opp, _rng)
 	_buckets[_played * BUCKETS / GAMES][o] += 1
 	_played += 1
 	if _played % 10 == 0:
@@ -214,7 +222,7 @@ func _finish() -> void:
 		_machine.mood = "calm"
 	Kit.set_text(_title, "%d판을 뒀어요" % GAMES)
 	Kit.set_text(_line, s)
-	_button.text = "졸업 시험 보러 가기"
+	_button.text = "졸업 시험 보러 가기" if plan.is_empty() else "시험 보러 가기"
 	Sfx.done()
 	relayout()
 	later(9.0, _go)

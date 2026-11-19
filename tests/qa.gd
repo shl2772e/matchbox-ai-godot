@@ -54,9 +54,19 @@ func _process(delta: float) -> void:
 		elif _shots.has("1-idle") and not _shots.has("0-teacher-done"):
 			_teacher_shots(get_parent().teacher)
 		elif _wait > 2.0 and _shots.has("1-idle"):
+			if _shots.has("9-result") and not _shots.has("contest-started"):
+				# 가르치기가 끝났으면 AI 키우기 대회를 한 번 돈다
+				_shots["contest-started"] = true
+				get_parent().start_contest()
+				return
 			if _shots.has("9-result") and not _shots.has("attract-started"):
-				# 마지막으로 대기 화면의 소개 돌려 보기를 한 바퀴 찍는다
+				# 마지막으로 순위가 올라간 첫 화면을 찍고, 그대로 뒀을 때 나오는 순위표와 이야기를 한 바퀴 찍는다
+				_shot("1-idle-rank")
 				_shots["attract-started"] = true
+				_wait = 1.2
+				return
+			if _shots.has("attract-started") and not _shots.has("attract-shown"):
+				_shots["attract-shown"] = true
 				get_parent()._show_attract()
 				return
 			if _shots.has("9-result"):
@@ -145,6 +155,39 @@ func _process(delta: float) -> void:
 			if _wait > 2.8:
 				_wait = 0.0
 				s._go()
+	elif s is RankScreen:
+		if _wait > 1.5:
+			_shot("1-rank-attract")
+			if _wait > 1.9:
+				_wait = 0.0
+				s.done.emit()
+	elif s is PlanScreen:
+		if _wait > 1.5:
+			_shot("6-plan")
+			if _wait > 1.9:
+				_wait = 0.0
+				s._change(0, -1)
+				s._change(1, 1)
+				s._leave(true)
+	elif s is ContestScreen:
+		if s.phase == "exam" and _wait > 0.8:
+			_shot("7-contest-exam")
+		elif s.phase == "score":
+			if not _shots.has("contest-typed"):
+				_shots["contest-typed"] = true
+				_wait = 0.0
+				for ch in ["ㅅ", "ㅓ", "ㅇ", "ㄴ", "ㅑ", "ㅇ"]:
+					s._pad.type(ch)
+			elif _wait > 1.6:
+				_shot("7-contest-score")
+				if _wait > 2.0:
+					_wait = 0.0
+					s._submit(true)
+		elif s.phase == "board" and _wait > 1.2:
+			_shot("7-contest-board")
+			if _wait > 1.6:
+				_wait = 0.0
+				s._leave(s.home)
 	elif s is TrainScreen:
 		if _wait > 1.2 and not _shots.has("5-train-start"):
 			_shot("5-train-start")

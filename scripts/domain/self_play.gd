@@ -166,3 +166,24 @@ static func perfect_kid(b: Array, rng: SeededRng) -> int:
 		_best_cache[key] = best
 	var moves: Array = _best_cache[key]
 	return moves[floori(rng.next() * moves.size())]
+
+
+# ---------- AI 키우기 대회 (연습 계획 세우기) ----------
+## 학생이 연습 600판을 칸 6개(100판씩)로 나눠 세 종류의 상대에게 준다. 그 계획대로 연습한 AI가
+## 시험관 세 종류와 100판씩 둬서 이기면 3점, 비기면 1점 (최고 900점).
+## 시뮬레이션(28가지 계획): 평균 365~612점. "아주 잘 두는 상대하고만"이 꼴찌다
+## (늘 같은 좋은 수만 두는 상대라, 엉뚱한 수를 두는 상대를 겪어 보지 못한다). 여러 상대를 섞은 계획이 1위.
+const CONTEST_GAMES := 600
+const CONTEST_SLOTS := 6
+const CONTEST_EXAM_EACH := 100
+## 운을 줄이려고 같은 계획으로 AI를 여러 대 키워 평균을 낸다. 점수 흔들림은 시험이 아니라 연습에서 온다:
+## 같은 AI를 다시 시험하면 ±9점, 같은 계획으로 새로 키우면 ±40점. 다섯 대 평균이면 ±18점쯤으로 준다
+const CONTEST_TEAM := 5
+const CONTEST_KINDS := ["random", "careful", "perfect"]
+const CONTEST_NAMES := {"random": "아무 데나 두는 친구", "careful": "막을 줄 아는 친구", "perfect": "아주 잘 두는 친구"}
+
+
+## 시험 한 판 (배우지 않고, 구슬이 가장 많은 칸을 고른다). 점수를 돌려준다: 이김 3, 비김 1, 짐 0
+static func contest_point(brain: Dictionary, kind: String, rng: SeededRng) -> int:
+	var o := play_one(brain, kind, rng, false, true)
+	return 3 if o == "ai" else (1 if o == "draw" else 0)
