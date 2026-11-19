@@ -146,7 +146,7 @@ func _note(vbox: VBoxContainer, s: String, size := 1.0, color := Kit.INK_SOFT) -
 
 
 ## 메뉴 항목 버튼: 왼쪽 맞춤, 카드 너비 가득
-func _item(vbox: VBoxContainer, s: String, kind: String, fn: Callable) -> Button:
+func _item(vbox: Container, s: String, kind: String, fn: Callable) -> Button:
 	var b := Kit.button(s, kind)
 	b.add_theme_font_size_override("font_size", int(Kit.R * 1.1))
 	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
@@ -186,34 +186,28 @@ func _on_off(on: bool) -> String:
 
 func _open_menu() -> void:
 	var vbox := _card("")
-	# 제목 줄: 왼쪽에 제목, 오른쪽에 교사용 안내를 여는 동그란 i 단추
-	var head := HBoxContainer.new()
-	var title := Kit.label("선생님 메뉴", Kit.F_TITLE, Kit.R * 1.7, Kit.NAVY)
-	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	head.add_child(title)
-	var info := Kit.button("i", "soft")
-	info.add_theme_font_override("font", Kit.F_TITLE)
-	info.custom_minimum_size = Vector2(Kit.R * 2.6, Kit.R * 2.6)
-	for state in ["normal", "hover", "pressed"]:
-		var st := Kit.box(Kit.NAVY, Kit.R * 1.3)
-		info.add_theme_stylebox_override(state, st)
-	for c in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color", "font_hover_pressed_color"]:
-		info.add_theme_color_override(c, Kit.CREAM)
-	info.pressed.connect(_open_guide)
-	head.add_child(info)
-	vbox.add_child(head)
-	var items := VBoxContainer.new()
-	items.add_theme_constant_override("separation", int(Kit.R * 0.5))
-	vbox.add_child(items)
+	vbox.add_child(Kit.label("선생님 메뉴", Kit.F_TITLE, Kit.R * 1.7, Kit.NAVY))
+	# 항목이 많아 두 줄로 나누고, 그래도 화면보다 길면 위아래로 밀어 본다 (제목이 잘리지 않게)
+	var scroll := ScrollContainer.new()
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	var room: float = _root.size.y if _root.size.y > 0.0 else 1080.0
+	vbox.add_child(scroll)
+	var items := GridContainer.new()
+	items.columns = 2
+	items.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	items.add_theme_constant_override("h_separation", int(Kit.R * 0.6))
+	items.add_theme_constant_override("v_separation", int(Kit.R * 0.5))
+	scroll.add_child(items)
+	_item(items, "교사용 안내 (흐름, 질문, 운영)", "primary", _open_guide)
 	var full := DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
 	_item(items, "처음 화면으로", "soft", _run.bind(go_home.emit))
-	_item(items, "AI 고르기 (처음부터 · 조금 · 많이 배운 AI)", "primary", _open_picker)
+	_item(items, "AI 고르기 (처음부터 · 조금 · 많이 배운 AI)", "soft", _open_picker)
 	# 새 흐름(AI 졸업시키기)은 3단계 고정이고 안내 4장이 없다. 판 수와 안내는 예전 흐름에서만 쓴다
 	_item(items, "놀이 방식: " + ("AI 졸업시키기 (새 흐름)" if settings.newflow else "예전 흐름 (안내 → 판 → 결과)"), "soft", _toggle.bind("newflow", not settings.newflow))
 	if not settings.newflow:
 		_item(items, "한 번에 둘 판 수: %d판" % settings.rounds, "soft", _toggle.bind("rounds", settings.rounds % 5 + 1))
 		_item(items, "안내 보이기: " + _on_off(settings.intro), "soft", _toggle.bind("intro", not settings.intro))
-	_item(items, "확률(%) 숫자 보이기: " + _on_off(settings.percent), "soft", _toggle.bind("percent", not settings.percent))
+	_item(items, "졸업장에 상태·행동·보상 낱말: " + _on_off(settings.percent), "soft", _toggle.bind("percent", not settings.percent))
 	_item(items, "소리: " + _on_off(settings.sound), "soft", _toggle.bind("sound", not settings.sound))
 	if not OS.has_feature("web"):
 		_item(items, "전체화면: " + _on_off(full), "soft", _toggle_fullscreen)
@@ -224,6 +218,7 @@ func _open_menu() -> void:
 	if not OS.has_feature("web"):
 		_item(items, "프로그램 끝내기", "danger", _open_confirm.bind("프로그램을 끝낼까요? AI 구슬과 오늘 기록은 저장되어 있어요.", "끝내기", get_tree().quit))
 	_ghost_close(vbox)
+	scroll.custom_minimum_size = Vector2(Kit.R * 44, minf(items.get_combined_minimum_size().y, room - Kit.R * 16))
 	_note(vbox, "성냥갑 AI v%s · AI가 배운 판 %d" % [version, brain_games], 0.85)
 
 
@@ -445,11 +440,12 @@ func toast(s: String) -> void:
 ## [제목, 본문] 묶음. 본문은 한 줄에 한 가지만 (줄바꿈마다 새 줄). 훑어봐도 알 수 있게 짧게 쓴다
 const GUIDE := [
 	["한 줄로", "1961년에 성냥갑과 구슬로 만든 틱택토 기계를 학생이 직접 가르쳐 봐요.\n원리: 해 보고, 결과가 좋으면 더 하고, 나쁘면 덜 한다."],
-	["AI 가르치기 (8~10분)", "1단계 3판: AI가 구슬을 집어 두는 것을 봐요.\n2단계 3판: AI가 고를 칸을 맞혀 보고, 내 손으로 상과 벌을 줘요.\n빨리 감기: AI가 혼자 1500판을 연습해요.\n졸업 시험 3판: 거의 못 이겨요. 비기면 잘한 거예요."],
-	["AI가 칸을 고르는 법", "칸에 적힌 %가 실제로 뽑힐 확률이에요.\n학생이 맞히기 쉽게, 구슬이 많은 칸이 구슬 수보다 더 잘 뽑히도록 해 두었어요.\n확률이 낮은 칸이 뽑히면 \"일부러 다른 수를 시험해 본다\"는 안내가 나와요.\nAI가 혼자 연습할 때는 구슬 수 그대로 뽑아요."],
+	["AI 가르치기 (8~10분)", "1단계 3판: AI가 구슬을 집어 두는 것을 봐요.\n2단계 3판: AI가 고를 칸을 맞혀 보고, 내 손으로 상과 벌을 줘요.\n빨리 감기: AI가 연습 상대와 1500판을 둬요.\n졸업 시험 3판: 거의 못 이겨요. 비기면 잘한 거예요."],
+	["AI가 칸을 고르는 법", "칸에 적힌 %는 구슬 수 그대로의 확률이에요. 원래 성냥갑 기계의 규칙이에요.\n학생과 둘 때만, 맞히기 쉽게 구슬이 많은 칸이 그보다 더 잘 뽑히도록 해 두었어요.\n맞혀 보는 동안은 %를 가리고 구슬만 보여 줘요.\n구슬이 적은 칸이 뽑히면 \"적어도 가끔은 뽑혀요\"라고 알려 줘요.\nAI가 연습할 때는 구슬 수 그대로 뽑아요."],
 	["체험 뒤에 물어볼 질문", "1. AI는 처음부터 이기는 법을 알고 있었나요?\n2. AI가 진 다음에 그 칸의 구슬은 어떻게 됐나요?\n3. 졌는데도 구슬을 넣어 주면 AI는 어떻게 될까요?"],
-	["AI 키우기 대회 (2분쯤)", "연습 600판을 세 친구에게 나눠 주는 계획을 세워요.\n그 계획으로 키운 AI 5대의 평균 점수가 나와요. 가장 높은 점수는 900점이에요.\n배울 점: 무엇으로 연습했느냐에 따라 실력이 달라져요.\n아주 잘 두는 친구하고만 연습하면 오히려 점수가 낮아요."],
-	["운영할 때", "60초 동안 아무도 누르지 않으면 첫 화면으로 돌아가요.\n첫 화면을 20초 두면 순위표와 1961년 이야기가 저절로 나와요.\n중학생은 \"확률(%) 숫자 보이기\"를 켜면 졸업장에 상태·행동·보상이 붙어요."],
+	["AI 키우기 대회 (2분쯤)", "연습 1000판을 여섯 친구에게 5판 단위로 나눠 주는 계획을 세워요.\n그 계획으로 키운 AI 5대의 평균 점수가 나와요. 가장 높은 점수는 700점이에요.\n배울 점: 무엇으로 연습했느냐에 따라 실력이 달라져요.\n한 친구하고만 연습하면 점수가 낮고, 여러 친구를 섞어야 높아요.
+같은 계획은 언제나 같은 점수가 나와요. 점수를 올리려면 계획을 바꿔야 해요."],
+	["운영할 때", "60초 동안 아무도 누르지 않으면 첫 화면으로 돌아가요.\n첫 화면을 20초 두면 순위표와 1961년 이야기가 저절로 나와요.\n중학생은 \"졸업장에 상태·행동·보상 낱말\"을 켜 주세요."],
 	["기록", "이름 없는 기록만 이 컴퓨터에 남아요 (걸린 시간, 승패, 누른 횟수).\n메뉴의 \"체험 통계\"에서 볼 수 있고, 거기서 지울 수 있어요."],
 ]
 

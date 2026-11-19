@@ -17,10 +17,10 @@ signal round_end(result: Dictionary)
 const OPEN_S := 0.4
 const OPEN_SLOW_S := 1.6
 const PICK_SLOW_S := 0.7
-const EXPLORE_LINE := "이번에는 일부러 다른 칸을 골랐어요. AI는 가끔 다른 수도 시험해 봐요."
+const EXPLORE_LINE := "이번에는 구슬이 적은 칸이 뽑혔어요. 적어도 가끔은 뽑혀요."
 const PICK_S := 0.35
 const END_S := 1.1
-const PREDICT_WAIT := 4.0
+const PREDICT_WAIT := 8.0
 const SET_NAMES := ["1단계", "2단계", "졸업 시험"]
 
 const TEACH_HAND := {
@@ -207,7 +207,7 @@ func _ai_turn(b: Array) -> void:
 	phase = "ai"
 	_view.locked = true
 	_view.active = false
-	# 학생과 둘 때는 구슬이 많은 칸으로 쏠리게 고른다 (화면의 %가 그 확률이다). 혼자 연습할 때만 구슬 수에 비례
+	# 학생과 둘 때는 구슬이 많은 칸으로 쏠리게 고른다 (맞히기 쉽게). 화면의 %는 구슬 수 그대로의 비율이다 (원래 규칙)
 	var c := Menace.choose_move(brain, b, _rng, Menace.FOCUS_KID)
 	if c.kind == "forced":
 		_say("마지막 한 칸이라 바로 둬요.")
@@ -219,7 +219,7 @@ func _ai_turn(b: Array) -> void:
 	_tag.t = 1.0
 	create_tween().tween_property(_tag, "t", 0.0, 0.7).set_delay(0.45)
 	_view.flash_match()
-	_view.show_beads(c.beads, c.chances)
+	_view.show_beads(c.beads)
 	_machine.working = true
 	if _machine.mood != "lost":
 		_machine.mood = "think"

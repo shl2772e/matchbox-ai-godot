@@ -35,8 +35,53 @@ static func careful_kid(b: Array, rng: SeededRng) -> int:
 	return random_kid(b, rng)
 
 
+## 그 칸들 가운데 빈칸 하나 (없으면 -1)
+static func _pick_of(b: Array, cells: Array, rng: SeededRng) -> int:
+	var e := []
+	for c in cells:
+		if b[c] == 0:
+			e.append(c)
+	return e[floori(rng.next() * e.size())] if not e.is_empty() else -1
+
+
+## 공격만 하는 친구: 이길 수 있으면 이기고, 아니면 제 돌 옆에 둬서 두 개를 나란히 만든다. 막지는 않는다
+static func attack_kid(b: Array, rng: SeededRng) -> int:
+	var win := _finishing(b, Ttt.KID)
+	if win >= 0:
+		return win
+	var good := []
+	for line in Ttt.LINES:
+		var marks := [b[line[0]], b[line[1]], b[line[2]]]
+		if marks.count(Ttt.KID) == 1 and marks.count(0) == 2:
+			for c in line:
+				if b[c] == 0 and not good.has(c):
+					good.append(c)
+	var c2 := _pick_of(b, good, rng)
+	return c2 if c2 >= 0 else random_kid(b, rng)
+
+
+## 막기만 하는 친구: AI가 두 개를 나란히 두면 막고, 아니면 아무 데나 둔다. 이길 수 있어도 모른다
+static func defend_kid(b: Array, rng: SeededRng) -> int:
+	var block := _finishing(b, Ttt.AI)
+	return block if block >= 0 else random_kid(b, rng)
+
+
 static func kid_move(opp: String, b: Array, rng: SeededRng) -> int:
 	match opp:
+		"corner":
+			# 모서리를 좋아하는 친구: 빈 모서리가 있으면 거기, 없으면 아무 데나
+			var c := _pick_of(b, [0, 2, 6, 8], rng)
+			return c if c >= 0 else random_kid(b, rng)
+		"center":
+			# 가운데를 좋아하는 친구: 가운데, 그다음 변(가운데 줄), 없으면 아무 데나
+			if b[4] == 0:
+				return 4
+			var c := _pick_of(b, [1, 3, 5, 7], rng)
+			return c if c >= 0 else random_kid(b, rng)
+		"attack":
+			return attack_kid(b, rng)
+		"defend":
+			return defend_kid(b, rng)
 		"careful":
 			return careful_kid(b, rng)
 		"perfect":
@@ -169,12 +214,18 @@ static func perfect_kid(b: Array, rng: SeededRng) -> int:
 
 
 # ---------- AI 키우기 대회 (연습 계획 세우기) ----------
-## 학생이 연습 600판을 칸 6개(100판씩)로 나눠 세 종류의 상대에게 준다. 그 계획대로 연습한 AI가
-## 시험관 세 종류와 100판씩 둬서 이기면 3점, 비기면 1점 (최고 900점).
-## 시뮬레이션(28가지 계획): 평균 365~612점. "아주 잘 두는 상대하고만"이 꼴찌다
-## (늘 같은 좋은 수만 두는 상대라, 엉뚱한 수를 두는 상대를 겪어 보지 못한다). 여러 상대를 섞은 계획이 1위.
-const CONTEST_GAMES := 600
-const CONTEST_SLOTS := 6
+## 학생이 연습 1000판을 5판 단위로 여섯 친구에게 나눠 준다. 그 계획대로 연습한 AI 다섯 대가
+## 시험관 세 종류와 100판씩 둬서 이기면 3점, 비기면 1점. 점수는 다섯 대의 평균
+## (최고 700점: 절대 지지 않는 시험관에게는 비기는 것이 최선).
+## 같은 계획이면 언제나 같은 점수가 나온다 (contest_seed로 난수를 정한다). 점수를 올리려면 계획을 바꿔야 한다.
+const CONTEST_GAMES := 1000
+const CONTEST_STEP := 5
+## 연습 친구 (계획의 칸 순서). 시험관(CONTEST_KINDS)과는 다르다
+const CONTEST_FRIENDS := ["random", "corner", "center", "attack", "defend", "perfect"]
+const FRIEND_NAMES := {"random": "아무 데나 두는 친구", "corner": "모서리를 좋아하는 친구", "center": "가운데를 좋아하는 친구", "attack": "공격만 하는 친구", "defend": "막기만 하는 친구", "perfect": "아주 잘 두는 친구"}
+const FRIEND_TRAITS := {"random": "어디에 둘지 몰라요", "corner": "모서리부터 둬요", "center": "가운데부터 둬요", "attack": "이기려고만 해요", "defend": "막으려고만 해요", "perfect": "절대 지지 않아요"}
+## 친구마다 구슬 색 번호 (Kit.bead_color)
+const FRIEND_COLOR := {"random": 0, "corner": 5, "center": 4, "attack": 3, "defend": 1, "perfect": 2}
 const CONTEST_EXAM_EACH := 100
 ## 운을 줄이려고 같은 계획으로 AI를 여러 대 키워 평균을 낸다. 점수 흔들림은 시험이 아니라 연습에서 온다:
 ## 같은 AI를 다시 시험하면 ±9점, 같은 계획으로 새로 키우면 ±40점. 다섯 대 평균이면 ±18점쯤으로 준다
@@ -189,3 +240,35 @@ const CONTEST_NAMES := {"random": "아무 데나 두는 친구", "careful": "막
 static func contest_point(brain: Dictionary, kind: String, rng: SeededRng) -> int:
 	var o := play_one(brain, kind, rng, false, CONTEST_FOCUS)
 	return 3 if o == "ai" else (1 if o == "draw" else 0)
+
+
+## 계획(친구마다 준 판 수) → 연습 상대 목록 (CONTEST_STEP판마다 한 칸). 여기서 하나씩 뽑아 둔다
+static func contest_plan(counts: Array) -> Array:
+	var plan := []
+	for i in mini(counts.size(), CONTEST_FRIENDS.size()):
+		for n in int(counts[i]) / CONTEST_STEP:
+			plan.append(CONTEST_FRIENDS[i])
+	return plan
+
+
+## 계획마다 정해진 난수 씨앗. 같은 계획이면 같은 연습, 같은 시험, 같은 점수가 된다
+static func contest_seed(counts: Array) -> int:
+	var h := 1961
+	for c in counts:
+		h = (h * 1009 + int(c) + 7) % 2147483647
+	return h
+
+
+## 계획 하나의 점수를 화면 없이 계산한다 (화면과 같은 순서: AI마다 연습 → 시험관 셋과 시험). 시뮬레이션과 테스트용
+static func contest_score(counts: Array) -> int:
+	var plan := contest_plan(counts)
+	var points := 0
+	for ai in CONTEST_TEAM:
+		var rng := SeededRng.new(contest_seed(counts) + ai)
+		var brain := Menace.new_brain()
+		for i in CONTEST_GAMES:
+			play_one(brain, plan[floori(rng.next() * plan.size())], rng)
+		for kind in CONTEST_KINDS:
+			for i in CONTEST_EXAM_EACH:
+				points += contest_point(brain, kind, rng)
+	return roundi(points / float(CONTEST_TEAM))

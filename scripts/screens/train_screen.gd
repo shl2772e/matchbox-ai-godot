@@ -47,10 +47,12 @@ var _machine: MachineView
 var _button: Button
 
 
-func _init(b: Dictionary, contest_plan: Array = []) -> void:
+func _init(b: Dictionary, contest_plan: Array = [], plan_seed := 0) -> void:
 	plan = contest_plan
 	if not plan.is_empty():
 		GAMES = SelfPlay.CONTEST_GAMES
+		# 같은 계획이면 같은 연습이 되게 난수를 정한다
+		_rng = SeededRng.new(plan_seed)
 		_auto = true
 	brain = b
 	for i in BUCKETS:
@@ -65,9 +67,9 @@ func build() -> void:
 	add_child(_brand)
 	_stage = Kit.label("빨리 감기" if plan.is_empty() else "AI 키우기 대회", Kit.F_LABEL, R * 1.3)
 	add_child(_stage)
-	_title = Kit.label("AI가 혼자 연습해요" if plan.is_empty() else "내 계획대로 연습하고 있어요", Kit.F_TITLE, R * 2.4, Kit.NAVY, HORIZONTAL_ALIGNMENT_CENTER)
+	_title = Kit.label("AI가 연습 상대와 %d판을 둬요" % GAMES if plan.is_empty() else "내 계획대로 연습하고 있어요", Kit.F_TITLE, R * 2.4, Kit.NAVY, HORIZONTAL_ALIGNMENT_CENTER)
 	add_child(_title)
-	_line = Kit.label("단추를 꾹 누르면 AI가 혼자 연습해요." if plan.is_empty() else "내가 고른 친구들과 %d판을 연습해요." % GAMES, Kit.F_BODY, R * 1.3, Kit.INK, HORIZONTAL_ALIGNMENT_CENTER, true)
+	_line = Kit.label("단추를 꾹 누르면 연습이 시작돼요." if plan.is_empty() else "내가 고른 친구들과 %d판을 연습해요." % GAMES, Kit.F_BODY, R * 1.3, Kit.INK, HORIZONTAL_ALIGNMENT_CENTER, true)
 	add_child(_line)
 	_graph = Drawn.new(_paint_graph)
 	add_child(_graph)
@@ -75,7 +77,7 @@ func build() -> void:
 	add_child(_box)
 	_machine = MachineView.new()
 	add_child(_machine)
-	_button = Kit.button("꾹 누르고 있어요" if plan.is_empty() else "연습 중이에요", "primary", true)
+	_button = Kit.button("여기를 꾹 눌러요" if plan.is_empty() else "연습 중이에요", "primary", true)
 	_button.custom_minimum_size.x = R * 16
 	_button.button_down.connect(_on_down)
 	_button.button_up.connect(_on_up)
@@ -234,7 +236,7 @@ func _paint_graph(ci: Drawn) -> void:
 	var r := Rect2(Vector2.ZERO, ci.size)
 	Kit.rrect(ci, Rect2(r.position + Vector2(0, R * 0.35), r.size), Kit.LINE, R * 0.8)
 	Kit.rrect(ci, r, Kit.CREAM, R * 0.8)
-	Kit.text(ci, Kit.F_LABEL, R * 1.25, "혼자 둔 판", Rect2(R * 1.4, R * 0.7, R * 8, R * 1.8), Kit.INK, HORIZONTAL_ALIGNMENT_LEFT)
+	Kit.text(ci, Kit.F_LABEL, R * 1.25, "연습한 판", Rect2(R * 1.4, R * 0.7, R * 8, R * 1.8), Kit.INK, HORIZONTAL_ALIGNMENT_LEFT)
 	Kit.text(ci, Kit.F_TITLE, R * 1.7, "%d / %d" % [_played, GAMES], Rect2(R * 7.2, R * 0.6, R * 12, R * 2.0), Kit.RED_INK, HORIZONTAL_ALIGNMENT_LEFT)
 	# 범례 (색 + 자리: 막대와 같은 순서로 위에서 아래)
 	var legend := [["AI가 진 판", Kit.NAVY], ["비긴 판", Kit.MUSTARD], ["AI가 이긴 판", Kit.RED]]
@@ -290,9 +292,17 @@ static func paint_first_box(ci: CanvasItem, r: Rect2, beads: Array, title: Strin
 	for i in 9:
 		var cr := Rect2(ox + (i % 3) * (cs + gap), oy + (i / 3) * (cs + gap), cs, cs)
 		Kit.rrect(ci, cr, Kit.PICK if beads[i] == top and top > 0 else Kit.TRAY, R * 0.35)
-		var n: int = mini(beads[i], 6)
 		var br := cs * 0.085
-		for k in n:
-			var p := Vector2(cr.position.x + cs * 0.5 + (k % 3 - 1) * br * 2.4, cr.position.y + cs * 0.2 + (k / 3) * br * 2.4)
-			Kit.bead(ci, p, br, i)
+		var tens: int = beads[i] / 10
+		var ones: int = beads[i] % 10 if beads[i] > 10 else beads[i]
+		if beads[i] <= 10:
+			tens = 0
+		var k := 0
+		# 10개짜리 큰 구슬을 먼저, 그 옆에 1개짜리 (자리가 좁아 여섯 개까지만 그린다. 정확한 수는 아래 숫자)
+		for t in tens:
+			Kit.bead(ci, Vector2(cr.position.x + cs * 0.5 + (k % 3 - 1) * br * 2.4, cr.position.y + cs * 0.2 + (k / 3) * br * 2.4), br * 1.25, i)
+			k += 1
+		for o in mini(ones, 6 - k):
+			Kit.bead(ci, Vector2(cr.position.x + cs * 0.5 + (k % 3 - 1) * br * 2.4, cr.position.y + cs * 0.2 + (k / 3) * br * 2.4), br * 0.8 if tens > 0 else br, i)
+			k += 1
 		Kit.text(ci, Kit.F_TITLE, cs * 0.4, str(beads[i]), Rect2(cr.position.x, cr.position.y + cs * 0.46, cs, cs * 0.5), Kit.INK)

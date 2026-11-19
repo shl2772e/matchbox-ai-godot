@@ -129,7 +129,7 @@ func _init() -> void:
 		{"flow": "new", "end": "grad", "after": "again", "quiz": {"correct": true}, "stages": [{"name": "play1-1", "ms": 60000.0}, {"name": "explain1", "ms": 8000.0}, {"name": "grad", "ms": 5000.0}],
 			"rounds": [{"stage": 1.0, "outcome": "kid", "kid_ms": [1000.0, 3000.0, 2000.0], "explored": 1.0, "predict": {"offered": true, "answered": true, "hit": true, "ms": 1500.0}, "teach": {"manual": 2.0, "total": 3.0}}]},
 		{"flow": "new", "end": "timeout", "stages": [{"name": "play1-1", "ms": 90000.0}], "rounds": []},
-		{"flow": "contest", "end": "left", "score": 520.0, "plan": [2.0, 3.0, 1.0], "stages": [{"name": "plan", "ms": 12000.0}], "rounds": []},
+		{"flow": "contest", "end": "left", "score": 520.0, "plan": [100.0, 200.0, 100.0, 250.0, 250.0, 100.0], "stages": [{"name": "plan", "ms": 12000.0}], "rounds": []},
 	]
 	var sum := Stats.summary(recs)
 	var flat := {}
@@ -172,6 +172,20 @@ func _init() -> void:
 			pm += SelfPlay.contest_point(mixed_ai, kind, crng)
 			pb += SelfPlay.contest_point(only_best, kind, crng)
 	check(pm > pb, "섞어서 연습한 AI가 잘 두는 상대하고만 연습한 AI보다 점수가 높음 (%d > %d)" % [pm, pb])
+	# 연습 친구 여섯: 언제나 빈칸에 두고, 같은 계획이면 같은 점수
+	for friend in SelfPlay.CONTEST_FRIENDS:
+		var fb := B("120010000")
+		var ok := true
+		for i in 30:
+			if fb[SelfPlay.kid_move(friend, fb, crng)] != 0:
+				ok = false
+		check(ok, "연습 친구가 빈칸에 둠 " + friend)
+	check(SelfPlay.kid_move("defend", B("110020000"), crng) == 2 and SelfPlay.kid_move("attack", B("110220000"), crng) == 5, "막기만 하는 친구는 막고, 공격만 하는 친구는 이긴다")
+	var plan_a := [100, 150, 100, 250, 300, 100]
+	check(SelfPlay.contest_plan(plan_a).size() == SelfPlay.CONTEST_GAMES / SelfPlay.CONTEST_STEP, "계획 목록 크기")
+	check(SelfPlay.contest_seed(plan_a) == SelfPlay.contest_seed(plan_a.duplicate()) and SelfPlay.contest_seed(plan_a) != SelfPlay.contest_seed([105, 145, 100, 250, 300, 100]), "계획마다 정해진 씨앗")
+	var sc1 := SelfPlay.contest_score(plan_a)
+	check(sc1 == SelfPlay.contest_score(plan_a) and sc1 > 0 and sc1 <= 700, "같은 계획은 같은 점수 (%d점)" % sc1)
 	Store.frozen = true
 	var rl := []
 	check(Store.add_ranking(rl, {"name": "가", "score": 500, "plan": [2, 2, 2], "date": "d"}) == 1, "순위 첫 기록")

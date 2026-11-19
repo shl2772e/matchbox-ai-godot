@@ -240,13 +240,10 @@ func start_contest() -> void:
 func _on_plan(counts: Array) -> void:
 	_contest_counts = counts
 	_contest_brain = Menace.new_brain()
-	var plan := []
-	for i in 3:
-		for n in int(counts[i]):
-			plan.append(SelfPlay.CONTEST_KINDS[i])
+	var plan := SelfPlay.contest_plan(counts)
 	Telemetry.put("plan", counts)
 	Telemetry.stage("practice")
-	var s := TrainScreen.new(_contest_brain, plan)
+	var s := TrainScreen.new(_contest_brain, plan, SelfPlay.contest_seed(counts))
 	s.done.connect(_on_contest_trained)
 	_show(s)
 

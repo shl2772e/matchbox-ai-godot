@@ -2,7 +2,7 @@ class_name ContestScreen
 extends ScreenBase
 ## AI 키우기 대회 2: 시험 → 점수 → 이름 적기 → 순위표.
 ## 같은 계획으로 키운 AI 다섯 대(첫 대는 연습 화면에서 키운 것)가 시험관 세 명과 100판씩 둔다.
-## 이기면 3점, 비기면 1점. 점수는 다섯 대의 평균 (최고 900점). 여러 대의 평균을 내는 것은 운을 줄이기 위해서다.
+## 이기면 3점, 비기면 1점. 점수는 다섯 대의 평균 (최고 700점: 절대 지지 않는 시험관에게는 비기는 것이 최선). 여러 대의 평균을 내는 것은 운을 줄이기 위해서다.
 ## 시험 때 AI는 배우지 않고, 구슬이 가장 많은 칸을 고른다.
 
 signal home
@@ -48,9 +48,9 @@ func _init(first_brain: Dictionary, plan_counts: Array, rank_list: Array) -> voi
 	_brain = first_brain
 	counts = plan_counts
 	ranking = rank_list
-	for i in 3:
-		for n in int(counts[i]):
-			_plan.append(SelfPlay.CONTEST_KINDS[i])
+	_plan = SelfPlay.contest_plan(counts)
+	# 같은 계획이면 같은 시험, 같은 점수가 되게 난수를 정한다
+	_rng = SeededRng.new(SelfPlay.contest_seed(counts) + 1)
 	for kind in SelfPlay.CONTEST_KINDS:
 		_tally[kind] = {"ai": 0, "draw": 0, "kid": 0}
 	var team := SelfPlay.CONTEST_TEAM
@@ -222,7 +222,7 @@ func _finish_exam() -> void:
 	for v in _ai_points:
 		each.append(str(v))
 	# 같은 계획으로 키워도 AI마다 점수가 다르다는 것을 보여 준다 (그래서 평균을 낸다)
-	Kit.set_text(_sub, "AI %d대의 점수 %s의 평균이에요. 가장 높은 점수는 900점." % [SelfPlay.CONTEST_TEAM, ", ".join(each)])
+	Kit.set_text(_sub, "AI %d대의 점수 %s의 평균이에요. 가장 높은 점수는 700점." % [SelfPlay.CONTEST_TEAM, ", ".join(each)])
 	var place := 1
 	for e in RankBoard.today(ranking):
 		if e.score >= score:

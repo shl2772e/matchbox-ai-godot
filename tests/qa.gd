@@ -162,12 +162,14 @@ func _process(delta: float) -> void:
 				_wait = 0.0
 				s.done.emit()
 	elif s is PlanScreen:
-		if _wait > 1.5:
+		if _wait > 0.8 and not _shots.has("plan-set"):
+			_shots["plan-set"] = true
+			for k in 6:
+				s._change(k, [100, 150, 100, 250, 300, 100][k])
+		elif _wait > 1.5:
 			_shot("6-plan")
 			if _wait > 1.9:
 				_wait = 0.0
-				s._change(0, -1)
-				s._change(1, 1)
 				s._leave(true)
 	elif s is ContestScreen:
 		if s.phase == "exam" and _wait > 0.8:

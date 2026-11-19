@@ -182,14 +182,14 @@ static func _contest_rows(ss: Array) -> Array:
 	var rows := []
 	var scores := []
 	var plan_ms := []
-	var slots := [0.0, 0.0, 0.0]
+	var slots := [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 	var plans := 0
 	for s in ss:
 		if s.has("score"):
 			scores.append(float(s.score))
-		if s.has("plan") and s.plan.size() == 3:
+		if s.has("plan") and s.plan.size() == slots.size():
 			plans += 1
-			for i in 3:
+			for i in slots.size():
 				slots[i] += float(s.plan[i])
 			var v := _stage_ms(s, "plan")
 			if v >= 0.0:
@@ -203,5 +203,8 @@ static func _contest_rows(ss: Array) -> Array:
 		rows.append(["점수 (평균 / 가장 높은 점수)", "%d점 / %d점" % [roundi(sum / scores.size()), roundi(scores.max())]])
 	rows.append(["계획 세우는 데 걸린 시간 (가운데 값)", _secs(_median(plan_ms))])
 	if plans > 0:
-		rows.append(["평균 계획 (6칸 가운데)", "아무 데나 %.1f칸 · 막을 줄 아는 %.1f칸 · 아주 잘 두는 %.1f칸" % [slots[0] / plans, slots[1] / plans, slots[2] / plans]])
+		var parts := []
+		for i in slots.size():
+			parts.append("%s %d판" % [str(SelfPlay.FRIEND_NAMES[SelfPlay.CONTEST_FRIENDS[i]]).trim_suffix(" 친구"), roundi(slots[i] / plans)])
+		rows.append(["평균 계획 (%d판 가운데)" % SelfPlay.CONTEST_GAMES, " · ".join(parts)])
 	return rows

@@ -41,26 +41,30 @@ static func paint(ci: CanvasItem, r: Rect2, entries: Array, rows: int, title: St
 		var nm: String = e.name if e.name != "" else "이름 없음"
 		Kit.text(ci, Kit.F_BOLD, fs, nm, Rect2(row.position.x + R * 4.0, y, row.size.x * 0.4, row.size.y), Kit.INK, HORIZONTAL_ALIGNMENT_LEFT)
 		var score_w := R * 5.6
-		# 계획: 네모 6개 (색으로 누구와 연습했는지). 자리가 좁으면 그리지 않는다
+		# 계획: 누구와 얼마나 연습했는지 색 막대로 (자리가 좁으면 그리지 않는다)
 		var plan: Array = e.get("plan", [])
-		var sq := minf(R * 0.9, row.size.y * 0.5)
-		var plan_w := (sq + R * 0.15) * SelfPlay.CONTEST_SLOTS
-		if row.size.x > R * 22:
+		var plan_w := R * 9.0
+		var total := 0.0
+		for v in plan:
+			total += float(v)
+		if row.size.x > R * 22 and total > 0.0:
 			var px := row.end.x - score_w - R * 0.6 - plan_w
-			var k := 0
+			var bh := minf(R * 0.9, row.size.y * 0.5)
 			for t in plan.size():
-				for n in int(plan[t]):
-					plan_mark(ci, Rect2(px + k * (sq + R * 0.15), y + (row.size.y - sq) / 2, sq, sq), t % 3)
-					k += 1
+				var pw: float = plan_w * float(plan[t]) / total
+				if pw > 0.5:
+					ci.draw_rect(Rect2(px, y + (row.size.y - bh) / 2, pw, bh), plan_color(plan.size(), t))
+					px += pw
 		Kit.text(ci, Kit.F_TITLE, fs, "%d점" % e.score, Rect2(row.end.x - score_w - R * 0.4, y, score_w, row.size.y), Kit.NAVY, HORIZONTAL_ALIGNMENT_RIGHT)
 
 
-## 계획 표시: 색을 못 가려도 알 수 있게 모양도 다르다 (아무 데나 = 동그라미, 막을 줄 아는 = 네모, 아주 잘 두는 = 세모)
-static func plan_mark(ci: CanvasItem, q: Rect2, kind: int) -> void:
-	var col: Color = PLAN_COLORS[kind]
-	if kind == 0:
-		ci.draw_circle(q.get_center(), q.size.x / 2, col, true, -1.0, true)
-	elif kind == 1:
-		Kit.rrect(ci, q, col, Kit.R * 0.15)
-	else:
-		ci.draw_colored_polygon(PackedVector2Array([Vector2(q.get_center().x, q.position.y), q.end, Vector2(q.position.x, q.end.y)]), col)
+## 연습 친구의 색
+static func friend_color(kind: String) -> Color:
+	return Kit.bead_color(SelfPlay.FRIEND_COLOR.get(kind, 0), 1)
+
+
+## 계획의 t번째 칸 색. 예전 기록(세 친구)도 읽는다
+static func plan_color(plan_size: int, t: int) -> Color:
+	if plan_size == SelfPlay.CONTEST_FRIENDS.size():
+		return friend_color(SelfPlay.CONTEST_FRIENDS[t])
+	return PLAN_COLORS[t % 3]

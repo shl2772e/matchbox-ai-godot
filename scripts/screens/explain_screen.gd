@@ -7,7 +7,7 @@ extends ScreenBase
 
 signal done
 
-const DEMO := [5, 0, 2, 0, 0, 1, 0, 0, 0]
+const DEMO := [5, 0, 4, 0, 0, 3, 0, 0, 0]
 const DEMO_BOARD := [0, 2, 0, 1, 0, 0, 0, 0, 0]
 const START := [4, 4, 4, 4, 4, 4, 4, 4, 4]
 
@@ -23,6 +23,7 @@ var _lines: Array[Label] = []
 var _next: Button
 var _time := 0.0
 var _gone := false
+var _dots := [Vector2.ZERO, Vector2.ZERO, Vector2.ZERO]
 
 
 func _init(k: String, beads: Array = [], games := 0, played_games := 0) -> void:
@@ -42,7 +43,7 @@ func _texts() -> Array:
 	return [
 		_change_line(),
 		"구슬이 늘어난 칸은 더 잘 골라요.",
-		"이제 AI가 혼자 %d판을 연습해요." % train_games,
+		"이제 AI가 %d판을 더 연습해요." % train_games,
 	]
 
 
@@ -55,10 +56,10 @@ func _change_line() -> String:
 	var a: int = START[best]
 	var b: int = now_beads[best]
 	if b > a:
-		return "%d판 만에 %s 칸 구슬이 %d개에서 %d개로 늘었어요." % [played, Ttt.CELL_NAMES[best], a, b]
+		return "%s 칸 구슬이 %d개로 늘었어요." % [Ttt.CELL_NAMES[best], b]
 	if b < a:
-		return "%d판 만에 %s 칸 구슬이 %d개에서 %d개로 줄었어요." % [played, Ttt.CELL_NAMES[best], a, b]
-	return "%d판을 두는 동안 구슬이 조금씩 바뀌었어요." % played
+		return "%s 칸 구슬이 %d개로 줄었어요." % [Ttt.CELL_NAMES[best], b]
+	return "구슬이 조금씩 바뀌었어요."
 
 
 func build() -> void:
@@ -110,7 +111,10 @@ func relayout() -> void:
 	var ty := y + (body_h - th) / 2 if not vertical else y + art.y + R * 1.6
 	for i in _lines.size():
 		var l := _lines[i]
-		ty += Kit.place(l, Vector2(tx + R * 2.2, ty), tw - R * 2.2) + R * 1.3
+		var h := Kit.place(l, Vector2(tx + R * 2.2, ty), tw - R * 2.2)
+		# 번호 동그라미 자리는 여기서 정해 둔다 (글줄이 떠오르는 동안의 자리를 따라가지 않게)
+		_dots[i] = Vector2(tx + R * 0.9, ty + h / 2)
+		ty += h + R * 1.3
 	y += body_h + R * 1.8
 	_next.position = Vector2((size.x - _next.size.x) / 2, y)
 	queue_redraw()
@@ -120,8 +124,7 @@ func relayout() -> void:
 func _draw() -> void:
 	var R := Kit.R
 	for i in _lines.size():
-		var l := _lines[i]
-		var c := l.position + Vector2(-R * 1.3, R * 1.1)
+		var c: Vector2 = _dots[i]
 		draw_circle(c, R * 0.8, Kit.NAVY, true, -1.0, true)
 		Kit.text(self, Kit.F_TITLE, R * 0.95, str(i + 1), Rect2(c - Vector2(R, R * 0.75), Vector2(R * 2, R * 1.5)), Kit.CREAM)
 

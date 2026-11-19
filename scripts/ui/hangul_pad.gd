@@ -19,11 +19,14 @@ func _ready() -> void:
 			var b := Kit.button(ch, "soft")
 			b.add_theme_font_override("font", Kit.F_BOLD)
 			b.add_theme_font_size_override("font_size", int(Kit.R * 1.5))
+			_plain(b, Kit.INK)
 			b.pressed.connect(type.bind(ch))
 			add_child(b)
 			line.append(b)
 		_keys.append(line)
 	_back = Kit.button("지우기", "danger")
+	_plain(_back, Kit.RED_INK)
+	_back.add_theme_font_size_override("font_size", int(Kit.R * 1.0))
 	_back.pressed.connect(backspace)
 	add_child(_back)
 	resized.connect(_layout)
@@ -78,3 +81,20 @@ func backspace() -> void:
 	_jamos.pop_back()
 	Sfx.tap()
 	changed.emit(text())
+
+
+## 자판 단추: 안쪽 여백이 없는 납작한 모양 (Kit.button의 넓은 여백을 그대로 쓰면 옆 단추와 겹친다)
+func _plain(b: Button, color: Color) -> void:
+	var R := Kit.R
+	for state in ["normal", "hover", "pressed", "focus", "disabled"]:
+		var st := Kit.box(Kit.KRAFT if state == "pressed" else Kit.CREAM, R * 0.35)
+		st.shadow_color = Kit.LINE
+		st.shadow_offset = Vector2(0, R * (0.05 if state == "pressed" else 0.15))
+		st.content_margin_left = 0
+		st.content_margin_right = 0
+		st.content_margin_top = 0
+		st.content_margin_bottom = 0
+		b.add_theme_stylebox_override(state, st)
+	b.custom_minimum_size = Vector2.ZERO
+	for c in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color", "font_hover_pressed_color"]:
+		b.add_theme_color_override(c, color)

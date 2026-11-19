@@ -265,7 +265,7 @@ const MAX_BEADS := 12
 
 ## 빈칸마다 든 구슬 수 9개 (비어 있으면 안 보임)
 var beads: Array = []
-## 칸마다 실제로 뽑힐 확률 (합 1). 화면의 %는 이것을 그대로 적는다
+## 칸마다 구슬 수 그대로의 비율 (합 1, 원래 성냥갑 기계의 확률). 화면의 %는 이것을 적는다
 var chances: Array = []
 var percent := false
 var beads_a := 0.0:
@@ -319,11 +319,12 @@ func _cell_bead_pos(i: int, k: int, n: int) -> Vector2:
 	return Vector2(r.get_center().x + (k % 4 - (in_row - 1) / 2.0) * step, r.position.y + cs * 0.17 + row * step) + j
 
 
-## 그 칸이 뽑힐 확률 (학생과 둘 때는 구슬이 많은 칸으로 쏠린 실제 확률)
+## 그 칸의 구슬이 전체 구슬 가운데 얼마인지 (원래 규칙의 확률)
 func _chance_text(i: int) -> String:
 	if chances.size() != 9:
 		return "0%"
-	return "%d%%" % roundi(chances[i] * 100.0)
+	# 뽑힐 수 있는 칸이 0%로 보이지 않게 (0%짜리가 뽑혔다고 느끼지 않도록)
+	return "%d%%" % (maxi(1, roundi(chances[i] * 100.0)) if chances[i] > 0.0 else 0)
 
 
 func _draw_cell_beads(i: int) -> void:
@@ -344,16 +345,18 @@ func _draw_cell_beads(i: int) -> void:
 	if i == guess:
 		var w := cs * 0.035
 		draw_rect(r.grow(-w / 2), Color(Kit.NAVY, a), false, w)
-	var n := mini(beads[i], MAX_BEADS)
-	for k in n:
-		var p := _cell_bead_pos(i, k, n)
-		var lifted := i == bead_pick and k == n - 1
+	var pile := _pile(i)
+	for k in pile.size():
+		var p: Vector2 = pile[k][0]
+		var rad: float = pile[k][1]
+		var lifted := i == bead_pick and k == pile.size() - 1
 		if lifted:
 			p.y -= cs * 0.05 * pick_t
-			draw_circle(p, _bead_r() * 1.4, Color(Kit.MUSTARD, pick_t * a), true, -1.0, true)
-		Kit.bead(self, p, _bead_r() * (1.0 + (0.15 * pick_t if lifted else 0.0)), i, a)
-	# 아래 한 줄: 이 칸이 나올 확률 (글자는 이것 하나만)
-	Kit.text(self, Kit.F_LABEL, cs * 0.16, _chance_text(i), Rect2(r.position.x, r.end.y - cs * 0.27, cs, cs * 0.22), Color(Kit.INK, a))
+			draw_circle(p, rad * 1.4, Color(Kit.MUSTARD, pick_t * a), true, -1.0, true)
+		_draw_one(p, rad * (1.0 + (0.15 * pick_t if lifted else 0.0)), pile[k][2], i, a)
+	# 아래 한 줄: 이 칸이 나올 확률 (글자는 이것 하나만). 맞혀 보는 동안은 가린다 (구슬을 보고 맞히게)
+	if not guessing:
+		Kit.text(self, Kit.F_LABEL, cs * 0.16, _chance_text(i), Rect2(r.position.x, r.end.y - cs * 0.27, cs, cs * 0.22), Color(Kit.INK, a))
 	if i == guess:
 		var tag := Rect2(Vector2(r.get_center().x - cs * 0.21, r.end.y - cs * 0.45), Vector2(cs * 0.42, cs * 0.15))
 		Kit.rrect(self, tag, Color(Kit.NAVY, a), cs * 0.06)
@@ -364,13 +367,14 @@ func _draw_cell_beads(i: int) -> void:
 func _draw_claw() -> void:
 	var r := cell_rect(bead_pick)
 	var cs := r.size.x
-	var n := mini(beads[bead_pick], MAX_BEADS)
+	var pile := _pile(bead_pick)
+	var n := pile.size()
 	if n <= 0:
 		return
 	var a := beads_a
 	var p := ScreenBase.ease_out(pick_t)
-	var bead := _cell_bead_pos(bead_pick, n - 1, n) - Vector2(0, cs * 0.05 * pick_t)
-	var br := _bead_r()
+	var bead: Vector2 = pile[n - 1][0] - Vector2(0, cs * 0.05 * pick_t)
+	var br: float = pile[n - 1][1]
 	var head := Vector2(bead.x, lerpf(r.position.y + br * 0.6, bead.y - br * 2.1, p))
 	var navy := Color(Kit.NAVY, a)
 	# 팔 (그 칸의 위쪽 가장자리에서 내려온다. 다른 칸의 구슬과 숫자를 가리지 않게)
@@ -499,6 +503,11 @@ func _draw_teach() -> void:
 			Kit.text(self, Kit.F_LABEL, cs * 0.105, ask, tag, Kit.CREAM)
 		# 바깥 자리: 구슬이 들어오거나 나가는 곳 (판 오른쪽 밖)
 		var out := Vector2(size.x + cs * 0.3, r.get_center().y)
+		if maxi(before, after) > TEACH_SHOW:
+			# 구슬이 많으면 10개짜리 큰 구슬로 묶어 보여 준다 (하나씩 날아가는 그림은 뺀다)
+			for q in _pile_in(r, after if ct >= TEACH_FLY else before, 0.36, cs * 0.055):
+				_draw_one(q[0], q[1], q[2], c.cell, 1.0)
+			shown = 0
 		for b in shown:
 			var pos := _teach_bead_pos(c.cell, b, shown)
 			if b < mini(before, after):
@@ -544,3 +553,38 @@ static func _arc(from: Vector2, to: Vector2, p: float) -> Vector2:
 	var q := ScreenBase.ease_out(p)
 	var mid := (from + to) / 2 + Vector2(0, -from.distance_to(to) * 0.25)
 	return from.lerp(mid, q).lerp(mid.lerp(to, q), q)
+
+
+## 칸 i에 보일 구슬들 [[자리, 반지름, 큰 구슬인지]]. 10개까지는 하나씩, 그보다 많으면 10개짜리 큰 구슬로 묶는다
+func _pile(i: int) -> Array:
+	var n: int = beads[i]
+	if n > 10:
+		return _pile_in(cell_rect(i), n, 0.2, _bead_r())
+	var out := []
+	for k in n:
+		out.append([_cell_bead_pos(i, k, n), _bead_r(), false])
+	return out
+
+
+## 큰 구슬(10개짜리) 한 줄 + 작은 구슬(1개짜리) 다섯 개씩. top은 칸 높이에서 첫 줄의 자리
+func _pile_in(r: Rect2, n: int, top: float, br: float) -> Array:
+	var out := []
+	var cs := r.size.x
+	var big := n / 10
+	var small := n % 10
+	var big_r := br * 1.7
+	for k in big:
+		out.append([Vector2(r.get_center().x + (k - (big - 1) / 2.0) * big_r * 2.3, r.position.y + cs * top), big_r, true])
+	var y0 := r.position.y + cs * top + big_r + br * 1.5
+	for k in small:
+		var row := k / 5
+		var in_row := mini(5, small - row * 5)
+		out.append([Vector2(r.get_center().x + (k % 5 - (in_row - 1) / 2.0) * br * 2.3, y0 + row * br * 2.3), br, false])
+	return out
+
+
+## 구슬 하나. 큰 구슬에는 10이라고 적는다
+func _draw_one(p: Vector2, rad: float, big: bool, color_i: int, alpha: float) -> void:
+	Kit.bead(self, p, rad, color_i, alpha)
+	if big:
+		Kit.text(self, Kit.F_LABEL, rad * 0.95, "10", Rect2(p - Vector2(rad, rad * 0.75), Vector2(rad * 2, rad * 1.5)), Color(Kit.CREAM, alpha))
