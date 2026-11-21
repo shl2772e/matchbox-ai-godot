@@ -131,7 +131,7 @@ func relayout() -> void:
 	var cols := 2 if portrait() else 3
 	var rows := ceili(counts.size() / float(cols))
 	var cw := (w - gap * (cols - 1)) / cols
-	var ch := R * 9.4
+	var ch := R * 10.3
 	var title_h := _title.get_combined_minimum_size().y
 	var lw := minf(w, R * 50)
 	var line_h := Kit.wrapped_height(_line, lw)
@@ -148,10 +148,12 @@ func relayout() -> void:
 		d.position = Vector2(x0 + (i % cols) * (cw + gap), y + (i / cols) * (ch + gap))
 		d.size = Vector2(cw, ch)
 		var bw := (cw - R * 2.6) / 2
+		# 단추는 제 최소 높이가 있어 적어 준 높이보다 커진다. 실제 높이로 카드 아랫선에서 띄운다
 		_minus[i].size = Vector2(bw, R * 2.3)
-		_minus[i].position = Vector2(R * 1.0, ch - R * 3.1)
 		_plus[i].size = Vector2(bw, R * 2.3)
-		_plus[i].position = Vector2(R * 1.6 + bw, ch - R * 3.1)
+		var by := ch - _minus[i].size.y - R * 0.9
+		_minus[i].position = Vector2(R * 1.0, by)
+		_plus[i].position = Vector2(R * 1.6 + bw, by)
 	y += rows * ch + (rows - 1) * gap + R * 0.8
 	Kit.place(_left, Vector2(pad.x, y), size.x - pad.x * 2)
 	y += R * 2.0 + R * 0.5
